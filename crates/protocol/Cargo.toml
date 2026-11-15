@@ -1,0 +1,30 @@
+[package]
+name = "gguf-engine-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Wire protocol for GGUF AI Engine: protobuf definitions, generated gRPC stubs and value types"
+build = "build.rs"
+
+[dependencies]
+gguf-engine-event-bus = { workspace = true }
+gguf-engine-config = { workspace = true }
+gguf-engine-hardware = { workspace = true }
+gguf-engine-database = { workspace = true }
+chrono = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+prost = { workspace = true }
+tonic = { workspace = true }
+tonic-prost = { workspace = true }
+
+[build-dependencies]
+tonic-prost-build = { workspace = true }
+protoc-bin-vendored = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+
+[lints]
+workspace = true

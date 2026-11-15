@@ -1,0 +1,149 @@
+// Copyright (c) GGUF AI Engine contributors. Apache-2.0.
+
+using System;
+using System.IO;
+using System.IO.Pipes;
+using System.Threading;
+using System.Threading.Tasks;
+using Gguf.V1;
+using Grpc.Core;
+using Grpc.Net.Client;
+
+namespace GgufAiEngine.Shell.Core;
+
+/// <summary>
+/// Connects to the core over its local IPC transport (spec §3.2).
+/// </summary>
+/// <remarks>
+/// Two properties matter and a naive client gets both wrong:
+///
+/// * the transport is a named pipe, never TCP — the shell must not open a
+///   network port even if a firewall would allow it;
+/// * "no core is running" is an ordinary state. <see cref="TryConnectAsync"/>
+///   returns <c>null</c> instead of throwing, so the window can show a
+///   reconnect affordance rather than an error dialog.
+/// </remarks>
+public sealed class CoreClient : IDisposable
+{
+    private readonly GrpcChannel _channel;
+
+    private CoreClient(GrpcChannel channel, string endpoint)
+    {
+        _channel = channel;
+        Endpoint = endpoint;
+    }
+
+    /// <summary>The endpoint this client talks to.</summary>
+    public string Endpoint { get; }
+
+    /// <summary>
+    /// Connect, or return <c>null</c> when nothing is listening.
+    /// </summary>
+    public static async Task<CoreClient?> TryConnectAsync(
+        string endpoint,
+        TimeSpan timeout,
+        CancellationToken cancellationToken = default)
+    {
+        var channel = GrpcChannel.ForAddress(
+            "http://localhost",
+            new GrpcChannelOptions
+            {
+                // No TLS: the peer is this user on this machine, and the pipe's
+                // DACL already decided whether the connection may exist.
+                HttpHandler = new SocketsHttpHandler
+                {
+                    ConnectCallback = async (_, ct) =>
+                    {
+                        var pipe = CreatePipe(endpoint);
+                        try
+                        {
+                            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                            cts.CancelAfter(timeout);
+                            await pipe.ConnectAsync(cts.Token).ConfigureAwait(false);
+                            return pipe;
+                        }
+                        catch
+                        {
+                            await pipe.DisposeAsync().ConfigureAwait(false);
+                            throw;
+                        }
+                    },
+                },
+            });
+
+        var client = new CoreClient(channel, endpoint);
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(timeout);
+            var health = new HealthService.HealthServiceClient(channel);
+            await health.PingAsync(new Empty(), cancellationToken: cts.Token).ConfigureAwait(false);
+            return client;
+        }
+        catch (RpcException)
+        {
+            client.Dispose();
+            return null;
+        }
+        catch (IOException)
+        {
+            client.Dispose();
+            return null;
+        }
+        catch (TimeoutException)
+        {
+            client.Dispose();
+            return null;
+        }
+    }
+
+    /// <summary>Open the underlying pipe stream for an endpoint.</summary>
+    private static NamedPipeClientStream CreatePipe(string endpoint)
+    {
+        var server = ".";
+        var name = endpoint;
+
+        if (endpoint.StartsWith(Shell.Core.Endpoint.PipePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            // Strip \\.\pipe\ to get the pipe name.
+            var remainder = endpoint[Shell.Core.Endpoint.PipePrefix.Length..];
+            var slash = remainder.IndexOf('\\');
+            if (slash >= 0)
+            {
+                server = remainder[..slash];
+                name = remainder[(slash + 1)..];
+            }
+            else
+            {
+                name = remainder;
+            }
+        }
+
+        // The core's pipe requires message-mode writes to be flushed; WriteThrough
+        // keeps small gRPC frames from sitting in the client buffer.
+        return new NamedPipeClientStream(
+            server,
+            name,
+            PipeDirection.InOut,
+            PipeOptions.Asynchronous | PipeOptions.WriteThrough);
+    }
+
+    /// <summary>Fetch the Overview + Settings snapshot.</summary>
+    public async Task<UiSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        var ui = new UiService.UiServiceClient(_channel);
+        return await ui.GetSnapshotAsync(new UiSnapshotRequest(), cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>Health report (used by the status strip).</summary>
+    public async Task<HealthReport> GetHealthAsync(CancellationToken cancellationToken = default)
+    {
+        var health = new HealthService.HealthServiceClient(_channel);
+        return await health.GetHealthAsync(new HealthRequest(), cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public void Dispose() => _channel.Dispose();
+}

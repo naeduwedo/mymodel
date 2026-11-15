@@ -1,0 +1,90 @@
+name: Platform shells
+
+# Separate from the main CI: these jobs need toolchains the Rust matrix does not
+# (the .NET SDK with Windows App SDK, GTK 4 headers). Keeping them apart means a
+# missing platform SDK never blocks the core's own gate.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'platforms/**'
+      - 'proto/**'
+      - 'crates/ipc/**'
+      - 'crates/protocol/**'
+      - '.github/workflows/platform-shells.yml'
+  pull_request:
+    paths:
+      - 'platforms/**'
+      - 'proto/**'
+      - 'crates/ipc/**'
+      - 'crates/protocol/**'
+      - '.github/workflows/platform-shells.yml'
+  workflow_dispatch:
+
+jobs:
+  windows-shell:
+    name: Windows shell (WinUI 3)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build the core (the shell tests drive the real daemon)
+        run: cargo build -p gguf-engine-daemon
+
+      - name: Check committed C# stubs match proto/
+        shell: pwsh
+        run: ./scripts/generate-csharp-protos.ps1 -Check
+
+      - name: Restore
+        working-directory: platforms/windows/GgufAiEngine.Shell
+        run: dotnet restore
+
+      - name: Build the shell
+        working-directory: platforms/windows/GgufAiEngine.Shell
+        run: dotnet build -c Release -p:Platform=x64 --no-restore
+
+      - name: Tests (mapping, endpoint vectors, end-to-end over the real pipe)
+        working-directory: platforms/windows/GgufAiEngine.Shell.Core.Tests
+        env:
+          GGUF_CORE_BIN: ${{ github.workspace }}/target/debug/gguf-core.exe
+        run: dotnet test -c Release
+
+  linux-shell:
+    name: Linux shell (GTK4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GTK 4 development headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build the shell
+        # This is what turns the Linux shell from "written" into "verified".
+        # It is a standalone package, not a workspace member.
+        working-directory: platforms/linux
+        run: cargo build --locked
+
+  macos-shell:
+    name: macOS shell (SwiftUI)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Not implemented
+        # Honest gate: the shell does not exist yet (platforms/macos/README.md).
+        # Failing loudly here is better than a green job that builds nothing.
+        run: |
+          echo "::warning::The macOS shell is planned, not implemented (platforms/macos/README.md)."
+          if [ ! -d platforms/macos/Sources ]; then
+            echo "No Swift sources yet; skipping the build."
+            exit 0
+          fi
+          cd platforms/macos && swift build

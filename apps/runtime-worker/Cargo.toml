@@ -1,0 +1,21 @@
+[package]
+name = "gguf-engine-runtime-worker"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Isolated inference runtime worker for GGUF AI Engine"
+
+[lib]
+# Exposes the binary name to integration tests (see tests/Cargo.toml).
+path = "src/lib.rs"
+
+[[bin]]
+name = "gguf-worker"
+path = "src/main.rs"
+
+[dependencies]
+tracing = { workspace = true }
+
+[lints]
+workspace = true

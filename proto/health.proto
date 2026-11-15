@@ -1,0 +1,41 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// Health and lifecycle service (spec §3.3: health check, single instance,
+// UI reconnect).
+
+message ComponentHealth {
+  string name = 1;
+  bool healthy = 2;
+  string detail = 3;
+}
+
+message BusStats {
+  uint64 published = 1;
+  uint64 dropped = 2;
+  uint32 subscribers = 3;
+  uint32 capacity = 4;
+  uint64 last_seq = 5;
+}
+
+message HealthRequest {}
+
+message HealthReport {
+  CoreState state = 1;
+  uint64 uptime_ms = 2;
+  uint64 started_at_unix_ms = 3;
+  uint32 pid = 4;
+  string version = 5;
+  BusStats bus = 6;
+  repeated ComponentHealth components = 7;
+  // True only when state is READY/DEGRADED and every component is healthy.
+  bool healthy = 8;
+}
+
+service HealthService {
+  rpc GetHealth(HealthRequest) returns (HealthReport);
+  // Liveness probe used by packaging/health checks; cheap, no allocation.
+  rpc Ping(Empty) returns (Empty);
+}

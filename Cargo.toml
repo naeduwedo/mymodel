@@ -1,0 +1,136 @@
+# GGUF AI Engine — Cargo Workspace
+#
+# Canonical dependency versions live here (see spec §2.2). Every member crate
+# consumes them through `workspace = true`. Cargo.lock is committed.
+[workspace]
+resolver = "3"
+members = [
+    "apps/*",
+    "crates/*",
+    # Workspace-level integration suite (binary + end-to-end tests).
+    "tests",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93"
+license = "Apache-2.0"
+repository = "https://example.invalid/gguf-ai-engine"
+authors = ["GGUF AI Engine contributors"]
+description = "Cross-platform local GGUF AI model manager and inference platform"
+
+[workspace.dependencies]
+# --- async runtime & concurrency ---
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal", "sync", "time", "net", "fs", "io-util", "process"] }
+tokio-util = { version = "0.7.20", features = ["rt"] }
+tokio-stream = { version = "0.1.19", features = ["sync"] }
+futures = "0.3.34"
+async-trait = "0.1.92"
+async-stream = "0.3.6"
+# 0.13 raises the MSRV to 1.95; 0.12 is the newest release compatible with
+# rustc 1.93 (the pinned toolchain in rust-toolchain.toml).
+parking_lot = "0.12.4"
+
+# --- serialization ---
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+toml = "1.2.1"
+uuid = { version = "1.29.2", features = ["v4", "v7", "serde"] }
+hex = "0.4.3"
+sha2 = "0.11.1"
+
+# --- errors & logging ---
+thiserror = "2.0.21"
+anyhow = "1.0.104"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+tracing-appender = "0.2.5"
+
+# --- CLI / config ---
+clap = { version = "4.6.7", features = ["derive", "env"] }
+directories = "6.0.0"
+
+# --- networking (unused by Task 1, pinned for Task 2+) ---
+axum = "0.8.9"
+# reqwest 0.13 renamed its TLS features: "rustls" replaces the old "rustls-tls".
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls", "stream"] }
+tonic = "0.14.9"
+tonic-prost = "0.14.9"
+prost = "0.14.6"
+# Code generation: the protobuf compiler is not guaranteed on developer
+# machines or CI, so the build script uses a pinned prebuilt binary.
+tonic-prost-build = "0.14.9"
+protoc-bin-vendored = "3.3.0"
+prost-types = "0.14.6"
+tower = "0.5.3"
+hyper-util = { version = "0.1", features = ["tokio"] }
+
+# --- storage ---
+# rusqlite rather than sqlx: sqlx 0.9 requires rustc 1.94 and sqlx's async
+# query macros need a live database at compile time. SQLite work here is I/O
+# bound and short, so it runs behind a small blocking wrapper (see
+# crates/database/src/lib.rs).
+rusqlite = { version = "0.37.0", features = ["bundled", "chrono"] }
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+
+# --- platform / system information ---
+# Pinned below the 1.95 MSRV cut-off of sysinfo 0.40.
+sysinfo = "0.37.2"
+memmap2 = "0.9.12"
+
+# --- testing ---
+tempfile = "3.27.0"
+
+# --- internal crates ---
+gguf-engine-config = { path = "crates/config" }
+gguf-engine-event-bus = { path = "crates/event-bus" }
+gguf-engine-core = { path = "crates/engine-core" }
+gguf-engine-protocol = { path = "crates/protocol" }
+gguf-engine-telemetry = { path = "crates/telemetry" }
+gguf-engine-database = { path = "crates/database" }
+gguf-engine-security = { path = "crates/security" }
+gguf-engine-ipc = { path = "crates/ipc" }
+gguf-engine-hardware = { path = "crates/hardware" }
+gguf-engine-gguf = { path = "crates/gguf" }
+gguf-engine-model-hub = { path = "crates/model-hub" }
+gguf-engine-runtime-manager = { path = "crates/runtime-manager" }
+gguf-engine-runtime-llama-cpp = { path = "crates/runtime-llama-cpp" }
+gguf-engine-gpu-manager = { path = "crates/gpu-manager" }
+gguf-engine-memory-manager = { path = "crates/memory-manager" }
+
+# --- platform-specific dependencies ---
+# Named pipe security descriptors (spec §3.2, §9.3). Declared here so member
+# crates can request it with `windows = { workspace = true }`; Cargo only
+# resolves it for Windows targets.
+windows = { version = "0.62.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_System_Threading",
+    "Win32_System_Pipes",
+] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+# Documentation quality is enforced per-crate via #![warn(missing_docs)].
+missing_docs_in_private_items = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+
+[profile.dev]
+opt-level = 0
+
+[profile.test]
+opt-level = 1

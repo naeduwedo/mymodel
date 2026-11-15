@@ -1,0 +1,123 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// Presentation contract for the three native UI shells (spec §4.1, §4.10).
+//
+// Why a dedicated RPC instead of letting each UI derive this from health:
+//
+// * spec §4 requires the three UIs to share one information architecture and
+//   one set of terms — if each shell formatted its own strings they would drift
+//   apart on the first rename;
+// * it keeps the shells *thin*: they render values, they do not decide policy,
+//   thresholds or what "healthy" means;
+// * a UI can be reviewed for honesty against this one payload.
+//
+// Every text here is produced by the core, so an unimplemented capability shows
+// up in all three shells with the same explanation and the same severity.
+
+// How a UI should present a value. Severity is a decision, not a colour.
+enum UiSeverity {
+  UI_SEVERITY_UNSPECIFIED = 0;
+  // Normal, informational.
+  UI_SEVERITY_OK = 1;
+  // Works, but the user should know something.
+  UI_SEVERITY_WARNING = 2;
+  // Broken, or not implemented yet.
+  UI_SEVERITY_ERROR = 3;
+  // Not applicable on this platform / build.
+  UI_SEVERITY_DISABLED = 4;
+}
+
+// A single value shown on Overview.
+message UiTile {
+  // Stable id for tests and for UI automation: "core.state", "db.schema", ...
+  string id = 1;
+  string label = 2;
+  // Already formatted for display (units, separators) by the core.
+  string value = 3;
+  UiSeverity severity = 4;
+  // Optional explanation shown under the value, e.g. why a feature is missing.
+  string detail = 5;
+}
+
+// One row of the capability list shared by Overview and Settings.
+message UiFeatureRow {
+  string id = 1;
+  string label = 2;
+  CapabilityStatus status = 3;
+  // Human readable status word: supported / experimental / planned / ...
+  string status_text = 4;
+  string reason = 5;
+  // Presentation severity derived by the core, so every shell colours the same
+  // row identically.
+  UiSeverity severity = 6;
+}
+
+message UiOverview {
+  repeated UiTile tiles = 1;
+  repeated UiFeatureRow features = 2;
+  // Most recent events, oldest first, already formatted for display.
+  repeated UiEventLine recent_events = 3;
+  // True when something the user can act on is wrong.
+  bool attention_required = 4;
+}
+
+message UiEventLine {
+  uint64 seq = 1;
+  string at_local = 2;
+  UiSeverity severity = 3;
+  string text = 4;
+}
+
+// One editable-or-not setting row. Task 3 renders these read-only; editing is
+// tracked as planned work and reported through "editable" so no shell has to
+// guess whether a control works.
+message UiSettingRow {
+  // Dotted config key, e.g. "core.api_port".
+  string key = 1;
+  string label = 2;
+  string value = 3;
+  // Where the value came from: "file" or "default".
+  string source = 4;
+  bool editable = 5;
+  // Reason the row is not editable, when it is not.
+  string note = 6;
+  UiSeverity severity = 7;
+}
+
+message UiSettingsGroup {
+  string title = 1;
+  repeated UiSettingRow rows = 2;
+}
+
+message UiSettings {
+  repeated UiSettingsGroup groups = 1;
+  // Validation findings from the configuration schema (spec §11).
+  repeated UiIssue issues = 2;
+  // Path of the configuration file in effect.
+  string config_file = 3;
+  bool config_file_exists = 4;
+}
+
+message UiIssue {
+  string field = 1;
+  UiSeverity severity = 2;
+  string message = 3;
+}
+
+message UiSnapshotRequest {}
+
+message UiSnapshot {
+  // Bumped when the payload changes incompatibly.
+  uint32 snapshot_version = 1;
+  // Local time the snapshot was produced, for the "last updated" line.
+  string generated_at_local = 2;
+  UiOverview overview = 3;
+  UiSettings settings = 4;
+}
+
+service UiService {
+  rpc GetSnapshot(UiSnapshotRequest) returns (UiSnapshot);
+}

@@ -1,0 +1,46 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// Memory orchestrator view (spec §6, Task 7).
+//
+// Every capacity is an integer byte count; no floating-point gigabytes.
+
+message MemoryRequest {}
+
+message MemoryTier {
+  // gpu_vram | host_ram | nvme_cache
+  string tier = 1;
+  uint64 total_bytes = 2;
+  uint64 used_bytes = 3;
+  uint64 reserved_bytes = 4;
+}
+
+message AllocationRequest {
+  string model_id = 1;
+  uint64 weights_bytes = 2;
+  uint64 kv_cache_bytes = 3;
+  uint64 activations_bytes = 4;
+  uint64 workspace_bytes = 5;
+}
+
+message AllocationGrant {
+  bool granted = 1;
+  string lease_id = 2;
+  repeated string device_ids = 3;
+  uint64 expires_at_unix_ms = 4;
+  string reason = 5;
+}
+
+service MemoryService {
+  rpc GetMemoryStatus(MemoryRequest) returns (MemoryStatus);
+  rpc RequestAllocation(AllocationRequest) returns (AllocationGrant);
+}
+
+message MemoryStatus {
+  CapabilityStatus status = 1;
+  string unavailable_reason = 2;
+  repeated MemoryTier tiers = 3;
+  uint32 active_leases = 4;
+}

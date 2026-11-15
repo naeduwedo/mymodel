@@ -1,0 +1,10 @@
+[package]
+name = "gguf-engine-inference"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Task queue, cancellation and inference orchestration"
+
+[lints]
+workspace = true

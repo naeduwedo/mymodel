@@ -1,0 +1,151 @@
+<Window
+    x:Class="GgufAiEngine.Shell.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:GgufAiEngine.Shell"
+    Title="GGUF AI Engine">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Connection status strip: the shell's own state, distinct from the
+             core's state, so "UI cannot reach core" is never shown as "core is
+             stopped". -->
+        <InfoBar
+            x:Name="ConnectionBar"
+            Grid.Row="0"
+            Severity="Error"
+            IsOpen="True"
+            Title="Not connected"
+            Message="Looking for the core..."
+            IsClosable="False" />
+
+        <NavigationView
+            x:Name="Nav"
+            Grid.Row="1"
+            PaneDisplayMode="Left"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            SelectionChanged="OnNavigationChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Overview" Tag="overview" Icon="Home" IsSelected="True" />
+                <NavigationViewItem Content="Settings" Tag="settings" Icon="Setting" />
+            </NavigationView.MenuItems>
+
+            <ScrollViewer x:Name="ContentScroller" Padding="24">
+                <StackPanel Spacing="16">
+                    <StackPanel x:Name="OverviewPanel" Spacing="16">
+                        <TextBlock Text="Overview" Style="{StaticResource TitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Name="OverviewTimestamp"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="Waiting for the core..." />
+                        <ItemsControl x:Name="TileList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="16"
+                                        Margin="0,0,0,8">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock
+                                                Text="{Binding Label}"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Opacity="0.7" />
+                                            <TextBlock
+                                                Text="{Binding Value}"
+                                                Style="{StaticResource SubtitleTextBlockStyle}"
+                                                TextWrapping="Wrap" />
+                                            <TextBlock
+                                                Text="{Binding Detail}"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Opacity="0.7"
+                                                TextWrapping="Wrap"
+                                                Visibility="{Binding DetailVisibility}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Capabilities" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <ItemsControl x:Name="FeatureList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="24,*,Auto" Margin="0,2">
+                                        <TextBlock Grid.Column="0" Text="{Binding Glyph}" />
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Label}" />
+                                            <TextBlock
+                                                Text="{Binding Reason}"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Opacity="0.7"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <TextBlock
+                                            Grid.Column="2"
+                                            Text="{Binding StatusText}"
+                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                            Opacity="0.7" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel x:Name="SettingsPanel" Spacing="16" Visibility="Collapsed">
+                        <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Name="SettingsSource"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="Loading..." />
+                        <InfoBar
+                            x:Name="SettingsIssueBar"
+                            Severity="Warning"
+                            IsOpen="False"
+                            IsClosable="False" />
+                        <ItemsControl x:Name="SettingGroups">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Spacing="6" Margin="0,8,0,8">
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <ItemsControl ItemsSource="{Binding Rows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="220,*,Auto" Margin="0,3">
+                                                        <TextBlock Grid.Column="0" Text="{Binding Label}" />
+                                                        <TextBlock
+                                                            Grid.Column="1"
+                                                            Text="{Binding Value}"
+                                                            FontFamily="Consolas"
+                                                            TextWrapping="Wrap" />
+                                                        <TextBlock
+                                                            Grid.Column="2"
+                                                            Text="{Binding Note}"
+                                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                                            Opacity="0.6"
+                                                            MaxWidth="320"
+                                                            TextWrapping="Wrap" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </NavigationView>
+
+        <Grid Grid.Row="2" Padding="16,8">
+            <TextBlock
+                x:Name="StatusLine"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Opacity="0.7"
+                Text="Starting..." />
+        </Grid>
+    </Grid>
+</Window>

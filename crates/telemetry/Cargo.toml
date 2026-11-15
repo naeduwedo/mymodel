@@ -1,0 +1,17 @@
+[package]
+name = "gguf-engine-telemetry"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "tracing setup, log rotation and performance metrics"
+
+[dependencies]
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+serde = { workspace = true }
+
+[lints]
+workspace = true

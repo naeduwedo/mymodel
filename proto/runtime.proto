@@ -1,0 +1,34 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// Runtime registry and capabilities (spec §8, Task 6).
+
+message RuntimeInfo {
+  string id = 1;
+  string version = 2;
+  string installed_path = 3;
+  CapabilityStatus installed = 4;
+  repeated string architectures = 5;
+  repeated string backends = 6;
+  repeated CapabilityEntry capabilities = 7;
+}
+
+message CapabilityEntry {
+  // multi_gpu | layer_split | tensor_parallel | cpu_offload | mmap |
+  // lazy_loading | engine_managed_paging | streaming
+  string name = 1;
+  CapabilityStatus status = 2;
+  string detail = 3;
+}
+
+message ListRuntimesRequest {}
+
+message ListRuntimesResponse {
+  repeated RuntimeInfo runtimes = 1;
+}
+
+service RuntimeService {
+  rpc ListRuntimes(ListRuntimesRequest) returns (ListRuntimesResponse);
+}

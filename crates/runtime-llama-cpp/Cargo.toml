@@ -1,0 +1,31 @@
+[package]
+name = "gguf-engine-runtime-llama-cpp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "llama.cpp runtime adapter: probe, load, stream and unload"
+
+[dependencies]
+gguf-engine-runtime-manager = { workspace = true }
+gguf-engine-gguf = { workspace = true }
+gguf-engine-hardware = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+async-stream = { workspace = true }
+parking_lot = { workspace = true }
+reqwest = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

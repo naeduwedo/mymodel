@@ -1,0 +1,26 @@
+[package]
+name = "gguf-engine-database"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "SQLite schema, versioned migrations and storage for GGUF AI Engine"
+
+[dependencies]
+gguf-engine-config = { workspace = true }
+gguf-engine-event-bus = { workspace = true }
+
+rusqlite = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

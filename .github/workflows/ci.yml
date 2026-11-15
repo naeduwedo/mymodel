@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  # Keep CI honest: warnings are errors, same as the local gate.
+  RUSTFLAGS: -D warnings
+
+jobs:
+  fmt:
+    name: rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: clippy (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Unit and integration tests
+        # Hardware-dependent suites (GPU, multi-GPU, memory pressure) are not
+        # part of this job: CI runners have no GPU. Mock-backed tests must be
+        # labelled as such wherever they appear (spec §14.2).
+        run: cargo test --workspace --all-targets
+      - name: Documentation builds without warnings
+        run: cargo doc --workspace --no-deps
+
+  msrv:
+    name: minimum supported Rust version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check MSRV from Cargo manifest
+        run: |
+          msrv=$(grep -m1 'rust-version' Cargo.toml | sed -E 's/.*"(.*)".*/\1/')
+          echo "MSRV: $msrv"
+          rustup toolchain install "$msrv" --profile minimal
+          cargo +"$msrv" check --workspace
+
+  deny-unsafe:
+    name: forbid unsafe code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: No `unsafe` blocks outside reviewed exceptions
+        # The workspace forbids `unsafe_code` via [workspace.lints.rust]. Exactly
+        # one crate may opt out: gguf-engine-security, for the Windows pipe DACL
+        # (docs/adr/ADR-010-unsafe-windows-pipe-acl.md). Anything else fails here.
+        run: |
+          allowed="crates/security/Cargo.toml"
+          offenders=$(grep -rln 'unsafe_code = "allow"' --include=Cargo.toml . | grep -v "^\./${allowed}\$" || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::these crates re-enabled unsafe code without an ADR:"
+            echo "$offenders"
+            exit 1
+          fi
+          echo "unsafe exceptions: ${allowed} (ADR-010)"
+
+  generated-stubs:
+    name: C# stubs match proto/
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail when Generated/ is stale
+        # The Windows shell commits its generated C# (see the csproj comment for
+        # why). Regenerating is deterministic, so a diff means someone edited a
+        # .proto without regenerating.
+        run: |
+          if ! git diff --quiet -- platforms/windows/GgufAiEngine.Shell/Generated; then
+            echo "::error::generated stubs are out of date"
+            exit 1
+          fi
+          echo "stubs are committed; see scripts/generate-csharp-protos.ps1"
+
+  lockfile:
+    name: Cargo.lock is committed and current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo metadata --locked --format-version 1 > /dev/null

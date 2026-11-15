@@ -1,0 +1,23 @@
+[package]
+name = "gguf-engine-shell-linux"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "GTK4 native shell for GGUF AI Engine (Linux)"
+
+[[bin]]
+name = "gguf-linux-shell"
+path = "src/main.rs"
+
+# Standalone package: it is NOT a member of the root workspace, because gtk4-rs
+# needs GTK 4 development headers that neither Windows nor macOS CI provides.
+# Run 'cargo build' inside this directory on a machine that has them.
+[workspace]
+
+[dependencies]
+gguf-engine-protocol = { path = "../../crates/protocol" }
+gguf-engine-ipc = { path = "../../crates/ipc" }
+
+gtk = { version = "0.9", package = "gtk4" }
+async-channel = "2.3"
+tokio = { version = "1", features = ["rt", "time"] }

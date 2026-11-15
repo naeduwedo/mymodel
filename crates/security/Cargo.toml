@@ -1,0 +1,37 @@
+[package]
+name = "gguf-engine-security"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Local-only access control for the GGUF AI Engine IPC surface"
+
+[dependencies]
+gguf-engine-config = { workspace = true }
+gguf-engine-protocol = { workspace = true }
+
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+# Lints are spelled out instead of `workspace = true` because this crate needs
+# one `unsafe` exception (the Windows pipe DACL); see
+# docs/adr/ADR-010-unsafe-windows-pipe-acl.md. The exception is re-narrowed at
+# the crate root with #![deny(unsafe_code)] plus a module-level allow.
+[lints.rust]
+unsafe_code = "allow"
+missing_debug_implementations = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+missing_docs_in_private_items = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"

@@ -1,0 +1,22 @@
+[package]
+name = "gguf-engine-hardware"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Hardware inventory: CPU, RAM, storage and GPU probes with explicit capability status"
+
+[dependencies]
+gguf-engine-event-bus = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+sysinfo = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

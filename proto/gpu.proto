@@ -1,0 +1,49 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// GPU topology, policy and allocation (spec §5.3, §5.4, Task 7).
+
+message PeerLink {
+  string from_device = 1;
+  string to_device = 2;
+  // interconnect: PCIE, NVLink, NONE, UNKNOWN
+  string interconnect = 3;
+  CapabilityStatus p2p_detected = 4;
+  CapabilityStatus p2p_supported_by_driver = 5;
+  CapabilityStatus p2p_tested = 6;
+  optional uint64 measured_bandwidth_bytes_sec = 7;
+}
+
+message GpuBudget {
+  string device_id = 1;
+  uint64 observed_free_vram_bytes = 2;
+  uint64 engine_reserve_bytes = 3;
+  uint64 system_reserve_bytes = 4;
+  uint64 safety_margin_bytes = 5;
+  uint64 usable_vram_bytes = 6;
+}
+
+message TopologyRequest {}
+
+message GpuTopology {
+  CapabilityStatus status = 1;
+  string unavailable_reason = 2;
+  repeated PeerLink links = 3;
+  repeated GpuBudget budgets = 4;
+  uint64 collected_at_unix_ms = 5;
+}
+
+message GpuPolicyRequest {
+  string strategy = 1;
+  bool allow_multi_gpu = 2;
+  bool allow_cross_vendor_model_split = 3;
+  string allow_tensor_parallel = 4;
+  bool prefer_task_parallel = 5;
+}
+
+service GpuService {
+  rpc GetTopology(TopologyRequest) returns (GpuTopology);
+  rpc SetPolicy(GpuPolicyRequest) returns (Status);
+}

@@ -1,0 +1,29 @@
+# Build output
+/target/
+**/*.rs.bk
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Local runtime data (see spec §15). Never commit user data.
+/data/
+/models/
+/cache/
+/logs/
+/runtimes/bin/
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+.env
+*.token
+# .NET build output (Windows shell)
+**/bin/
+**/obj/

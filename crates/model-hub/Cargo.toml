@@ -1,0 +1,30 @@
+[package]
+name = "gguf-engine-model-hub"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Hugging Face Hub search, revision-pinned download and SHA-256 verification"
+
+[dependencies]
+gguf-engine-config = { workspace = true }
+gguf-engine-gguf = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+tracing = { workspace = true }
+futures = { workspace = true }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+reqwest = { workspace = true }
+
+
+[lints]
+workspace = true

@@ -1,0 +1,22 @@
+[package]
+name = "gguf-engine-runtime-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Runtime adapter trait, capability registry and worker supervision for GGUF AI Engine"
+
+[dependencies]
+gguf-engine-hardware = { workspace = true }
+gguf-engine-gguf = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true

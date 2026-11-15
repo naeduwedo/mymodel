@@ -1,0 +1,76 @@
+# GGUF AI Engine — reference configuration.
+#
+# Every key below is optional; the value shown is the default. Unknown keys are
+# rejected (see docs/adr/ADR-009). All capacities are integer bytes — no
+# floating-point gigabytes are ever stored or accepted.
+#
+# Relative paths are resolved against the application data root and must stay
+# inside it:
+#   Windows  %LOCALAPPDATA%\GGUF-AI-Engine\
+#   Linux    ~/.local/share/gguf-ai-engine/
+#   macOS    ~/Library/Application Support/GGUF AI Engine/
+
+[core]
+# Interface the core API binds to. Non-loopback values are warned about, and
+# the API requires token authentication once the bind leaves loopback.
+host = "127.0.0.1"
+api_port = 18888
+grpc_port = 18889
+# tracing filter directive, e.g. "info", "debug", "gguf_engine_core=debug,info"
+log_level = "info"
+# Start the core with the user's login session (registers an OS login item).
+start_with_login = false
+# Keep runtime workers alive when the last UI disconnects.
+keep_workers_after_ui_exit = true
+# Worker health probe period (>= 100 ms).
+health_interval_ms = 5000
+# Missing this many heartbeats marks a worker dead; must exceed health_interval_ms.
+heartbeat_timeout_ms = 30000
+
+[paths]
+models = "models"
+cache = "cache"
+runtimes = "runtimes"
+logs = "logs"
+database = "database"
+
+[downloads]
+# 1..16
+max_concurrent_downloads = 3
+resume = true
+# Files are only marked ready after verification.
+verify_hashes = true
+temporary_directory = "cache/downloads"
+max_retries = 5
+
+[memory]
+strategy = "auto"
+# VRAM kept free on every GPU (2 GiB).
+gpu_reserve_bytes = 2147483648
+# Host RAM kept free for the OS (8 GiB).
+ram_reserve_bytes = 8589934592
+# NVMe space kept free (10 GiB).
+nvme_reserve_bytes = 10737418240
+# Hard cap on prefetch traffic (2 GiB).
+max_prefetch_bytes = 2147483648
+# Engine-managed tensor paging; off unless a runtime proves safe lifetimes.
+allow_engine_managed_paging = false
+
+[gpu]
+strategy = "auto"
+allow_multi_gpu = true
+# Cross-vendor splitting of one model is never planned by default.
+allow_cross_vendor_model_split = false
+# "never" | "when_supported" | "always"
+allow_tensor_parallel = "when_supported"
+prefer_task_parallel = true
+
+[runtime]
+auto_install = true
+isolate_workers = true
+auto_update = false
+
+[api]
+bind = "127.0.0.1"
+# "local_only" | "token" — required to be "token" for a non-loopback bind.
+authentication = "local_only"

@@ -1,0 +1,38 @@
+[package]
+name = "gguf-engine-daemon"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "GGUF AI Engine core daemon process"
+
+[lib]
+# Exposes the binary name to integration tests (see tests/Cargo.toml).
+path = "src/lib.rs"
+
+[[bin]]
+name = "gguf-core"
+path = "src/main.rs"
+
+[dependencies]
+gguf-engine-config = { workspace = true }
+gguf-engine-core = { workspace = true }
+gguf-engine-event-bus = { workspace = true }
+gguf-engine-protocol = { workspace = true }
+gguf-engine-telemetry = { workspace = true }
+gguf-engine-database = { workspace = true }
+gguf-engine-ipc = { workspace = true }
+uuid = { workspace = true }
+
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

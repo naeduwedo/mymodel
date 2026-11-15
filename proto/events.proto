@@ -1,0 +1,25 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// Event stream service (spec §3.2: core internal typed events; UI reconnect).
+//
+// A reconnecting client passes the highest seq it already has; the core
+// replays its bounded ring first and then continues live.
+
+message EventRequest {
+  // 0 means "from the beginning of the replay ring".
+  uint64 after_seq = 1;
+}
+
+message Event {
+  uint64 seq = 1;
+  uint64 at_unix_ms = 2;
+  string correlation_id = 3;
+  string payload_json = 4;
+}
+
+service EventService {
+  rpc Subscribe(EventRequest) returns (stream Event);
+}

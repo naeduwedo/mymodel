@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Toolkit-free part of the Windows shell: endpoint derivation and snapshot
+    mapping. It targets plain net8.0 with no WinUI reference, so it can be unit
+    tested headlessly on a build machine (the WinUI project cannot: a page needs
+    a real window and a UI thread).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>GgufAiEngine.Shell.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.28.3" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Generated stubs are shared with the app project. -->
+    <Compile Include="..\GgufAiEngine.Shell\Generated\*.cs" LinkBase="Generated" />
+  </ItemGroup>
+
+</Project>

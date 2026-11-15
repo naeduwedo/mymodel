@@ -1,0 +1,77 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+import "gpu.proto";
+
+// Hardware inventory (spec §4.2, §5.2, Task 4).
+//
+// Declared now so the wire contract is frozen before implementation; the core
+// returns UNIMPLEMENTED from every call until Task 4 lands, and the UI shows
+// the Hardware page as unavailable with that reason.
+
+message CpuInfo {
+  string model = 1;
+  uint32 physical_cores = 2;
+  uint32 logical_cores = 3;
+  uint64 base_frequency_mhz = 4;
+  repeated string features = 5;
+  string architecture = 6;
+}
+
+message MemoryInfo {
+  uint64 total_bytes = 1;
+  uint64 available_bytes = 2;
+  // Apple unified memory is described here, never as discrete VRAM.
+  bool unified_with_gpu = 3;
+}
+
+message StorageInfo {
+  string mount_point = 1;
+  string device = 2;
+  uint64 total_bytes = 3;
+  uint64 available_bytes = 4;
+  bool removable = 5;
+}
+
+message GpuDevice {
+  string id = 1;
+  string name = 2;
+  string vendor = 3;
+  string backend = 4;
+  optional uint64 total_vram_bytes = 5;
+  optional uint64 free_vram_bytes = 6;
+  optional uint64 memory_bandwidth_bytes_sec = 7;
+  optional string compute_capability = 8;
+  optional string pci_bus_id = 9;
+  optional uint32 pcie_generation = 10;
+  optional uint32 pcie_lanes = 11;
+  optional uint32 numa_node = 12;
+  optional float temperature_c = 13;
+  optional float utilization_percent = 14;
+  optional float power_watts = 15;
+  repeated string peer_access = 16;
+  // How confident we are in these numbers (spec §5.3).
+  CapabilityStatus confidence = 17;
+  string driver_version = 18;
+}
+
+message HardwareRequest {}
+
+message HardwareReport {
+  CapabilityStatus status = 1;
+  string unavailable_reason = 2;
+  CpuInfo cpu = 3;
+  MemoryInfo memory = 4;
+  repeated StorageInfo storage = 5;
+  repeated GpuDevice gpus = 6;
+  uint64 collected_at_unix_ms = 7;
+  // Interconnect knowledge between the devices above (spec §5.3). Carried with
+  // the inventory so a client never has to guess: an unknown topology arrives
+  // as status UNKNOWN with the probe's reason, not as an empty list.
+  GpuTopology topology = 8;
+}
+
+service HardwareService {
+  rpc GetHardware(HardwareRequest) returns (HardwareReport);
+}

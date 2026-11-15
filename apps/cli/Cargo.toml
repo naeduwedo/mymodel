@@ -1,0 +1,46 @@
+[package]
+name = "gguf-engine-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Command line interface for GGUF AI Engine"
+
+[lib]
+# Exposes the binary name to integration tests (see tests/Cargo.toml).
+path = "src/lib.rs"
+
+[[bin]]
+name = "gguf"
+path = "src/main.rs"
+
+[dependencies]
+gguf-engine-config = { workspace = true }
+gguf-engine-core = { workspace = true }
+gguf-engine-event-bus = { workspace = true }
+gguf-engine-protocol = { workspace = true }
+gguf-engine-telemetry = { workspace = true }
+gguf-engine-database = { workspace = true }
+gguf-engine-gguf = { workspace = true }
+gguf-engine-model-hub = { workspace = true }
+gguf-engine-gpu-manager = { workspace = true }
+gguf-engine-memory-manager = { workspace = true }
+gguf-engine-hardware = { workspace = true }
+gguf-engine-runtime-llama-cpp = { workspace = true }
+gguf-engine-runtime-manager = { workspace = true }
+tokio-stream = { workspace = true }
+tokio-util = { workspace = true }
+gguf-engine-ipc = { workspace = true }
+
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

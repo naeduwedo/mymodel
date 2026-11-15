@@ -1,0 +1,24 @@
+[package]
+name = "gguf-engine-gpu-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "GPU topology-aware scheduler: budgets, execution strategies and resource leases"
+
+[dependencies]
+gguf-engine-config = { workspace = true }
+gguf-engine-hardware = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,52 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// Inference tasks and streaming (spec §9, Task 6).
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_QUEUED = 1;
+  TASK_STATUS_PREPARING = 2;
+  TASK_STATUS_DOWNLOADING = 3;
+  TASK_STATUS_LOADING = 4;
+  TASK_STATUS_RUNNING = 5;
+  TASK_STATUS_POSTPROCESSING = 6;
+  TASK_STATUS_COMPLETED = 7;
+  TASK_STATUS_FAILED = 8;
+  TASK_STATUS_CANCELLED = 9;
+}
+
+message ChatMessage {
+  // system | user | assistant | tool
+  string role = 1;
+  string content = 2;
+}
+
+message ChatRequest {
+  string model_id = 1;
+  repeated ChatMessage messages = 2;
+  optional string task_id = 3;
+  optional uint32 max_tokens = 4;
+  optional float temperature = 5;
+  optional bool stream = 6;
+}
+
+message ChatChunk {
+  string task_id = 1;
+  string delta = 2;
+  bool done = 3;
+  TaskProgress progress = 4;
+}
+
+message TaskProgress {
+  TaskStatus status = 1;
+  uint32 tokens_generated = 2;
+  uint64 elapsed_ms = 3;
+  optional double tokens_per_second = 4;
+}
+
+service InferenceService {
+  rpc Chat(ChatRequest) returns (stream ChatChunk);
+}

@@ -1,0 +1,36 @@
+[package]
+name = "gguf-engine-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Workspace-level integration tests (binary and end-to-end level)"
+
+# A test-only crate that owns the integration suite. It has no library: the
+# point is to exercise the real binaries and the public crates the way a user
+# or a native UI would.
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+gguf-engine-config = { workspace = true }
+
+# Binaries under test. Declaring them as dependencies makes cargo export
+# CARGO_BIN_EXE_<name> at compile time and guarantees they are built first.
+gguf-engine-cli = { path = "../apps/cli" }
+gguf-engine-daemon = { path = "../apps/core-daemon" }
+gguf-engine-runtime-worker = { path = "../apps/runtime-worker" }
+gguf-engine-ipc = { workspace = true }
+tokio-stream = { workspace = true }
+
+[dev-dependencies]
+gguf-engine-core = { workspace = true }
+gguf-engine-event-bus = { workspace = true }
+gguf-engine-protocol = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true }
+
+[lints]
+workspace = true

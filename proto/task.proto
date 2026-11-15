@@ -1,0 +1,35 @@
+syntax = "proto3";
+package gguf.v1;
+
+import "common.proto";
+
+// Task records and events (spec §9.1).
+
+message TaskSummary {
+  string task_id = 1;
+  string model_id = 2;
+  string runtime_id = 3;
+  string modality = 4;
+  string status = 5;
+  float progress = 6;
+  uint64 started_at_unix_ms = 7;
+  optional uint64 finished_at_unix_ms = 8;
+  optional string error_code = 9;
+  optional string error_message = 10;
+}
+
+message TaskRequest {
+  string task_id = 1;
+}
+
+message ListTasksRequest {}
+
+message ListTasksResponse {
+  repeated TaskSummary tasks = 1;
+}
+
+service TaskService {
+  rpc GetTask(TaskRequest) returns (TaskSummary);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc CancelTask(TaskRequest) returns (Status);
+}
