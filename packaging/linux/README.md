@@ -34,10 +34,11 @@ writing a file there first and confirming it afterwards).
 | --- | --- |
 | `nfpm.yaml` | One definition for both .deb and .rpm (keeps them from drifting) |
 | `gguf` | `/usr/bin/gguf` wrapper that execs the real binary from /usr/lib |
-| `gguf-ai-engine.desktop` | Desktop entry (inert until the GTK4 shell is packaged) |
+| `gguf-ai-engine.desktop` | Desktop entry; launches the packaged GTK4 shell |
 | `postinstall.sh` | Prints where data will live; creates nothing system-wide |
 | `preremove.sh` | On removal, tells the user where their models are instead of deleting them |
 | `README.packaged.md` | Installed as the package's documentation |
+| `build-packages.sh` | Builds the binaries, the GTK4 shell, both packages, and self-verifies |
 
 ## Build (on a Linux machine)
 
@@ -70,3 +71,23 @@ The workflow asserts all four of these, and fails the build if any regresses:
 3. The package installs and `gguf version --json` runs.
 4. Uninstalling leaves `~/.local/share/gguf-ai-engine` intact - the test writes
    a file there first and checks it afterwards.
+## The shell is part of the package
+
+`build-packages.sh` builds `platforms/linux` and installs the result at
+`/usr/lib/gguf-ai-engine/gguf-ai-engine-ui`, which is exactly what the desktop
+entry's `Exec=` names. The package declares `Depends: libgtk-4-1` and links
+against the system GTK rather than bundling one.
+
+Verified by installing the .deb and launching that path under Xvfb:
+
+```text
+== desktop entry target ==
+-rwxr-xr-x 4194024 /usr/lib/gguf-ai-engine/gguf-ai-engine-ui
+Exec=/usr/lib/gguf-ai-engine/gguf-ai-engine-ui
+== starting the core ==
+   core ready
+== launching the packaged UI (as the desktop entry would) ==
+   packaged UI stayed alive for 8s
+   no critical errors
+== PASS
+```

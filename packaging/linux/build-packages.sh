@@ -47,6 +47,15 @@ if grep -q '{{' "${generated}"; then
   exit 1
 fi
 
+# The GTK4 shell is part of the package: the desktop entry points at it.
+# It is built by its own standalone package, into a path the nfpm config names.
+echo "== building the GTK4 shell"
+( cd "${repo}/platforms/linux" && CARGO_TARGET_DIR="${repo}/platforms/linux/target-shell" cargo build --release )
+if [[ ! -x "${repo}/platforms/linux/target-shell/release/gguf-linux-shell" ]]; then
+  echo "the GTK4 shell did not build; the desktop entry would point at nothing" >&2
+  exit 1
+fi
+
 echo "== building .deb"
 ( cd "${repo}" && nfpm package --config "${generated}" --packager deb --target "${dist}/" )
 
@@ -60,6 +69,7 @@ echo "== verifying the .deb file list"
 deb="$(ls "${dist}"/*.deb | head -1)"
 dpkg -c "${deb}" > "${dist}/deb-contents.txt"
 for expected in \
+  ./usr/lib/gguf-ai-engine/gguf-ai-engine-ui \
   ./usr/lib/gguf-ai-engine/gguf-core \
   ./usr/lib/gguf-ai-engine/gguf \
   ./usr/lib/gguf-ai-engine/gguf-worker \

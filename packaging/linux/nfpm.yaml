@@ -26,6 +26,12 @@ vendor: GGUF AI Engine contributors
 homepage: https://example.invalid/gguf-ai-engine
 license: Apache-2.0
 
+# The GTK4 shell links against the system GTK. Bundling it would drag in a
+# second copy of GLib and fight the desktop's own; declaring the dependency lets
+# the distribution's package manager resolve one that matches the system.
+depends:
+  - libgtk-4-1
+
 contents:
   - src: target/release/gguf-core
     dst: /usr/lib/gguf-ai-engine/gguf-core
@@ -44,6 +50,12 @@ contents:
   # not by a system service: it is a per-user process with a per-user data dir.
   - src: packaging/linux/gguf
     dst: /usr/bin/gguf
+    file_info:
+      mode: 0755
+
+  # The desktop entry launches this path, so it must exist in the package.
+  - src: platforms/linux/target-shell/release/gguf-linux-shell
+    dst: /usr/lib/gguf-ai-engine/gguf-ai-engine-ui
     file_info:
       mode: 0755
 

@@ -202,7 +202,7 @@ silently attached (ADR-018).
 | Deliverable | State | Evidence |
 | --- | --- | --- |
 | Windows MSIX | **built and verified** | `scripts/package-windows.ps1` → 69.8 MB package; `makeappx unpack` succeeds and lists all binaries |
-| Linux deb / rpm | **built, installed and run** | `packaging/linux/build-packages.sh`: .deb + .rpm produced, .deb installed, `gguf doctor` passes over a Unix socket, uninstall keeps user data |
+| Linux deb / rpm | **built, installed, launched** | package includes the GTK4 shell; installing it and running the desktop entry's `Exec=` path works under Xvfb |
 | macOS DMG | recipe only | `packaging/macos/README.md`; the shell it would wrap is still planned |
 | Signing / verification | documented, not automated | signing is a release decision (ADR-019); scripts emit unsigned artifacts |
 | Auto-update | **not implemented** | needs a signed channel + rollback policy; half of it would be worse than none |
@@ -400,4 +400,25 @@ unload the model - the same unload-on-disconnect rule the gRPC service enforces.
 ```text
 $ cd platforms/linux && cargo test
 test result: ok. 6 passed; 0 failed
+```
+## Follow-up - the Linux package ships the GUI: **done**
+
+The .deb shipped the CLI and the core but not the shell, so the desktop entry
+pointed at a path that did not exist. It was documented as "inert until the GTK4
+shell is packaged" - which stopped being true once the shell built, and became a
+lie the moment someone installed it.
+
+`build-packages.sh` now builds `platforms/linux` too and installs the result at
+the exact path the desktop entry names. The package declares `Depends:
+libgtk-4-1` and links the system GTK rather than bundling a second copy.
+
+Verified by installing the .deb and launching that path:
+
+```text
+-rwxr-xr-x 4194024 /usr/lib/gguf-ai-engine/gguf-ai-engine-ui
+Exec=/usr/lib/gguf-ai-engine/gguf-ai-engine-ui
+   core ready
+   packaged UI stayed alive for 8s
+   no critical errors
+== PASS
 ```
