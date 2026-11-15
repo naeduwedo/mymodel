@@ -236,6 +236,7 @@ async fn run_daemon(config: &Config, paths: &AppPaths) -> ExitCode {
         config_file: paths.config_file().display().to_string(),
         config_file_exists: paths.config_file().exists(),
         data_root: paths.root().display().to_string(),
+        models_dir: paths.models().display().to_string(),
         endpoint: gguf_engine_protocol::ipc_endpoint(paths.root()),
         hardware: std::sync::Arc::new(gguf_engine_ipc::services::HardwareCache::default()),
     };

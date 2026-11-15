@@ -32,6 +32,7 @@ fn state() -> CoreState {
         config_file: "config.toml".into(),
         config_file_exists: false,
         data_root: "data".into(),
+        models_dir: "data/models".into(),
         endpoint: "test".into(),
         hardware: std::sync::Arc::new(gguf_engine_ipc::services::HardwareCache::default()),
     }
@@ -171,6 +172,9 @@ async fn unimplemented_services_are_not_registered() {
         assert!(!report.unavailable_reason.is_empty());
     }
 
+    // Inference is implemented now. An empty request must be rejected by
+    // validation rather than reaching the runtime: loading a model to answer
+    // nothing would be a waste of VRAM.
     let mut inference = pb::inference_service_client::InferenceServiceClient::new(channel);
     let err = inference
         .chat(pb::ChatRequest {
@@ -182,8 +186,12 @@ async fn unimplemented_services_are_not_registered() {
             stream: None,
         })
         .await
-        .expect_err("inference must not be served before Task 6");
-    assert_eq!(err.code(), tonic::Code::Unimplemented);
+        .expect_err("an empty chat request must be rejected");
+    assert_eq!(
+        err.code(),
+        tonic::Code::InvalidArgument,
+        "expected validation, got: {err}"
+    );
 
     server.shutdown().await.unwrap();
 }

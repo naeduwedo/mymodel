@@ -59,6 +59,21 @@ impl CoreClient {
         Ok(reply.into_inner())
     }
 
+    /// Run a chat completion, streaming tokens as they are generated.
+    ///
+    /// The stream ends with a `done` chunk carrying the token count and elapsed
+    /// time, or with an error. Dropping the returned stream cancels the request:
+    /// the core notices the disconnect and unloads the model.
+    pub async fn chat(
+        &self,
+        request: pb::ChatRequest,
+    ) -> Result<tonic::Streaming<pb::ChatChunk>, IpcError> {
+        let mut client =
+            pb::inference_service_client::InferenceServiceClient::new(self.channel.clone());
+        let reply = client.chat(request).await?;
+        Ok(reply.into_inner())
+    }
+
     /// Stream events after `after_seq`, replaying from the core's ring first.
     pub async fn subscribe(&self, after_seq: u64) -> Result<tonic::Streaming<pb::Event>, IpcError> {
         let mut client = pb::event_service_client::EventServiceClient::new(self.channel.clone());

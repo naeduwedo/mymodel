@@ -167,6 +167,7 @@ mod tests {
             config_file: "config.toml".into(),
             config_file_exists: false,
             data_root: "data".into(),
+            models_dir: "data/models".into(),
             endpoint: "test".into(),
             hardware: std::sync::Arc::new(crate::services::HardwareCache::default()),
         }
@@ -274,6 +275,7 @@ mod view_tests {
             config_file: "C:/data/config.toml".into(),
             config_file_exists: true,
             data_root: "C:/data".into(),
+            models_dir: "C:/data/models".into(),
             endpoint: "test-endpoint".into(),
             hardware: std::sync::Arc::new(HardwareCache::default()),
         }

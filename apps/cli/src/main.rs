@@ -103,6 +103,24 @@ enum Command {
     },
     /// Report installed runtimes and their capabilities.
     Runtimes,
+    /// Ask the running core to complete a prompt (over gRPC, like the UI does).
+    Ask {
+        /// Model id from the registry, or a path to a GGUF file.
+        #[arg(long)]
+        model: String,
+        /// The user prompt.
+        #[arg(short, long)]
+        prompt: String,
+        /// Optional system prompt.
+        #[arg(long)]
+        system: Option<String>,
+        /// Maximum tokens to generate.
+        #[arg(long, default_value_t = 256)]
+        max_tokens: u32,
+        /// Sampling temperature.
+        #[arg(long, default_value_t = 0.7)]
+        temperature: f32,
+    },
     /// Show how a model would be scheduled on this machine.
     Plan {
         /// Weight size in GiB.
@@ -308,6 +326,29 @@ async fn run(cli: Cli) -> Result<ExitCode> {
         }
         Command::Memory => {
             let ok = commands::memory(&ctx, cli.json)?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Ask {
+            model,
+            prompt,
+            system,
+            max_tokens,
+            temperature,
+        } => {
+            let ok = commands::ask(
+                &ctx,
+                &model,
+                &prompt,
+                system.as_deref(),
+                max_tokens,
+                temperature,
+                cli.json,
+            )
+            .await?;
             Ok(if ok {
                 ExitCode::SUCCESS
             } else {

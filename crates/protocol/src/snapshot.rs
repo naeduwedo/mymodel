@@ -96,6 +96,7 @@ pub fn feature_label(id: &str) -> &str {
         "multi_gpu_scheduling" => "Multi-GPU scheduling",
         "memory_paging" => "Memory paging",
         "vision" => "Vision (image in)",
+        "inference" => "Chat (streaming)",
         "multimodal_other" => "Image / video / audio / music",
         "http_api" => "HTTP / OpenAI API",
         other => other,

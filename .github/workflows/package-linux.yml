@@ -1,0 +1,116 @@
+name: Packaging
+
+# Builds the Linux packages that packaging/linux/nfpm.yaml describes.
+#
+# This workflow exists because those packages were written on Windows and could
+# not be built there. Until this job runs green, packaging/linux/README.md
+# correctly says "recipe only, not built" - and that claim is meant to expire.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/linux/**'
+      - 'crates/**'
+      - 'apps/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/package-linux.yml'
+  pull_request:
+    paths:
+      - 'packaging/linux/**'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  deb-rpm:
+    name: deb + rpm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release binaries
+        run: |
+          cargo build --release \
+            -p gguf-engine-daemon \
+            -p gguf-engine-cli \
+            -p gguf-engine-runtime-worker
+
+      - name: Install nfpm
+        run: |
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Build .deb and .rpm
+        run: |
+          mkdir -p dist
+          nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+          nfpm package --config packaging/linux/nfpm.yaml --packager rpm --target dist/
+          ls -l dist/
+
+      - name: Verify the .deb file list
+        # The package must contain the three binaries, the PATH wrapper and the
+        # documentation - and nothing else. A stray file here means the layout
+        # drifted from what packaging/linux/README.md promises.
+        run: |
+          deb=$(ls dist/*.deb)
+          dpkg -c "$deb" > deb-contents.txt
+          cat deb-contents.txt
+          for expected in \
+            ./usr/lib/gguf-ai-engine/gguf-core \
+            ./usr/lib/gguf-ai-engine/gguf \
+            ./usr/lib/gguf-ai-engine/gguf-worker \
+            ./usr/bin/gguf \
+            ./usr/share/applications/gguf-ai-engine.desktop
+          do
+            grep -qF "$expected" deb-contents.txt || {
+              echo "missing from the package: $expected"
+              exit 1
+            }
+          done
+
+      - name: Verify the .rpm file list
+        run: |
+          rpm=$(ls dist/*.rpm)
+          rpm -qlp "$rpm" > rpm-contents.txt || sudo apt-get install -y rpm
+          rpm -qlp "$rpm" > rpm-contents.txt
+          cat rpm-contents.txt
+          grep -qF '/usr/lib/gguf-ai-engine/gguf-core' rpm-contents.txt
+
+      - name: Install and run the CLI
+        # The real test: install the package and use it. A package that lists the
+        # right files but does not run is not packaged correctly.
+        run: |
+          sudo dpkg -i dist/*.deb
+          gguf version --json
+          gguf doctor --data-dir "$RUNNER_TEMP/gguf-data" || true
+
+      - name: Removing the package keeps user data
+        run: |
+          data="$HOME/.local/share/gguf-ai-engine"
+          mkdir -p "$data/models"
+          echo "pretend this is a 40 GB model" > "$data/models/model.gguf"
+          sudo dpkg -r gguf-ai-engine
+          test -f "$data/models/model.gguf" || {
+            echo "uninstalling deleted user data - this is a regression"
+            exit 1
+          }
+          echo "user data survived the uninstall, as required"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: dist/*.deb
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages-rpm
+          path: dist/*.rpm
+          retention-days: 7

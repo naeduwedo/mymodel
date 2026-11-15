@@ -107,6 +107,9 @@ pub fn features() -> Vec<Feature> {
             FeatureStatus::Planned,
             Some("image generation, video, audio and music have no runtime adapter yet".to_owned()),
         ),
+        // Task 9 follow-up: InferenceService streams chat over the local transport,
+        // which is the path the UI shells use.
+        Feature::new("inference", FeatureStatus::Supported, None),
         Feature::new(
             "http_api",
             FeatureStatus::Planned,
@@ -182,7 +185,8 @@ mod tests {
                 "runtime_llama_cpp",
                 "multi_gpu_scheduling",
                 "memory_paging",
-                "vision"
+                "vision",
+                "inference"
             ],
             "advertising a capability before it exists violates spec rule 4"
         );

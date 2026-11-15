@@ -128,7 +128,7 @@ fn daemon_serves_health_over_the_platform_transport() {
         let planned = health
             .components
             .iter()
-            .find(|c| c.name == "multimodal_other")
+            .find(|c| c.name == "http_api")
             .expect("planned components are listed, not hidden");
         assert!(!planned.healthy);
         assert!(!planned.detail.is_empty(), "a gap must have a reason");

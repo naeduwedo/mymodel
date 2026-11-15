@@ -1,5 +1,6 @@
 //! CLI command implementations.
 
+mod ask;
 mod chat;
 mod config;
 mod doctor;
@@ -20,6 +21,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context as _, Result};
 use gguf_engine_config::{AppPaths, Config};
 
+pub use ask::ask;
 pub use chat::chat;
 pub use config::config;
 pub use doctor::doctor;

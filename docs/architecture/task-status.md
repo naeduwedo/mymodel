@@ -234,3 +234,34 @@ $ gguf doctor
 | Code signing | needs a certificate the project does not have; automating it would produce untrustworthy packages |
 | Auto-update | requires a signed channel, downgrade policy and rollback; the database already refuses downgrades |
 | Runtime auto-install | runtimes are per-user and independent by design (spec §15) |
+
+## Follow-up after Task 9 — chat over gRPC: **done**
+
+Task 6 gave the CLI an in-process chat. The UI shells need the same capability
+through the core, which is what `InferenceService` now provides.
+
+| Deliverable | State | Evidence |
+| --- | --- | --- |
+| `InferenceService.Chat` | done | streams `ChatChunk`; the same path the shells use |
+| Model resolution | done | a file path, or a registered repository id resolved to its newest revision's weights |
+| Unload on disconnect | done | a `Drop` guard unloads even when the client vanishes mid-answer |
+| Concurrency | one model | a second request gets `RESOURCE_EXHAUSTED` instead of an unexplained wait |
+| `gguf ask` | done | chat through the running core over gRPC |
+| End-to-end test | done, opt-in | `chat_e2e` streams real tokens and rejects an unknown model |
+
+```text
+$ gguf ask --model ggml-org/models --prompt 'Once upon a time there was' --max-tokens 20
+ Anna was very excited and collecting
+[20 chunks, 20 tokens, 32 ms, 625.0 tok/s]
+
+$ gguf ask --model ggml-org/models --prompt 'The sky is' --max-tokens 12 --json
+{"answer":" Anna, I'm scar","chunks":12,"elapsed_ms":16,"ok":true,
+ "tokens_generated":12,"tokens_per_second":750.0}
+```
+
+Two failure modes are handled because they were found by tests, not by reading:
+
+- a client that disconnects mid-stream would otherwise leave a `llama-server`
+  holding VRAM until the core restarted, so the unload lives in a `Drop` guard;
+- a server-streaming RPC can report its failure as the stream's first item rather
+  than at call time, so the test accepts either and still refuses an empty answer.

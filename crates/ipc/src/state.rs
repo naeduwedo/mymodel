@@ -68,6 +68,12 @@ pub struct CoreState {
     pub config_file_exists: bool,
     /// Data root in use.
     pub data_root: String,
+    /// Directory holding downloaded model files.
+    ///
+    /// Stored rather than derived from `data_root` because the models directory
+    /// is configurable; deriving it would silently point the inference service at
+    /// the wrong place for anyone who moved it.
+    pub models_dir: String,
     /// Endpoint the core is serving on.
     pub endpoint: String,
     /// Cached hardware inventory, shared by `HardwareService` and the Overview

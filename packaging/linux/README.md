@@ -1,8 +1,11 @@
 # Linux packaging (deb / rpm / AppImage) - **recipe only, not built**
 
-Status: **unverified**. Nothing in this directory has been produced on a Linux
-machine, because none was available while writing it. Treat these as reviewed
-recipes that CI must build before the Linux package is claimed to work.
+Status: **unverified on the development machine**. Nothing here has been built
+locally, because no Linux machine was available while writing it.
+
+[`.github/workflows/package-linux.yml`](../../.github/workflows/package-linux.yml)
+now builds and tests these packages on every relevant push. The recipe becomes a
+deliverable the first time that job runs green - not before.
 
 ## What is here
 
@@ -36,9 +39,13 @@ nfpm package --config packaging/linux/nfpm.yaml --packager rpm --target dist/
 - **AppImage is not defined yet.** It needs a self-contained bundle including
   GTK4, which depends on the Task 3 Linux shell that is still unverified.
 
-## What CI must prove
+## What the CI job proves
+
+The workflow asserts all four of these, and fails the build if any regresses:
 
 1. `nfpm` builds both formats without error.
-2. `dpkg -c` / `rpm -qlp` list exactly the files above.
-3. Installing in a clean container and running `gguf doctor` exits 0.
-4. Removing the package leaves `~/.local/share/gguf-ai-engine` intact.
+2. `dpkg -c` / `rpm -qlp` list the three binaries, the PATH wrapper and the
+   desktop entry.
+3. The package installs and `gguf version --json` runs.
+4. Uninstalling leaves `~/.local/share/gguf-ai-engine` intact - the test writes
+   a file there first and checks it afterwards.

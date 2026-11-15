@@ -16,6 +16,7 @@ use tokio::sync::watch;
 use tracing::{error, info, warn};
 
 use crate::error::IpcError;
+use crate::inference::InferenceService;
 use crate::services::{
     EventService, HardwareService, HealthService, ModelService, RuntimeService, UiService,
 };
@@ -87,6 +88,9 @@ fn router(state: &CoreState) -> tonic::transport::server::Router {
         ))
         .add_service(pb::runtime_service_server::RuntimeServiceServer::new(
             RuntimeService::new(),
+        ))
+        .add_service(pb::inference_service_server::InferenceServiceServer::new(
+            InferenceService::new(state.clone()),
         ))
 }
 
