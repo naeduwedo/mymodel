@@ -800,10 +800,12 @@ name = "gguf-engine-shell-linux"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "futures-util",
  "gguf-engine-ipc",
  "gguf-engine-protocol",
  "glib",
  "gtk4",
+ "thiserror",
  "tokio",
 ]
 

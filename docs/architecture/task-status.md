@@ -48,7 +48,7 @@ documented crate shell.
 | Shell | State | Evidence |
 | --- | --- | --- |
 | Windows (WinUI 3, C#/XAML) | **implemented and tested** | `dotnet build` clean; 20 xunit tests, including end-to-end against the real `gguf-core` over the real named pipe |
-| Linux (GTK4, gtk4-rs) | **built and verified** | `platforms/linux/verify.sh`: real core + Xvfb, window survives 8 s, no critical errors. Building it found two real defects (see below) |
+| Linux (GTK4, gtk4-rs) | **built, verified, chat implemented** | `platforms/linux/verify.sh`: real core + Xvfb, window survives 8 s, no critical errors. 6 chat-logic tests |
 | macOS (SwiftUI, AppKit) | **planned** | `platforms/macos/README.md` states what is missing and why no code is shipped |
 
 The core produces one presentation snapshot (`proto/ui.proto`, `UiService/
@@ -379,3 +379,25 @@ A defect found while doing it: `nfpm` expands `{{ .Env.VERSION }}` in the packag
 metadata but writes the raw template into the file name, producing
 `gguf-ai-engine_{{ .Env.VERSION }}_amd64.deb`. The script now resolves the version
 itself and refuses to run if any template survives into the generated config.
+## Follow-up - Linux chat page: **done**
+
+The Linux shell now has the same chat capability as the Windows one: model id,
+prompt, transcript, Send / Stop / Clear.
+
+The rules live in `platforms/linux/src/chat.rs` with no GTK dependency, so they
+are tested without a display:
+
+| Rule | Why |
+| --- | --- |
+| an empty prompt is refused before reaching the core | it would load a model to answer nothing |
+| the pending prompt is added to the request but not the transcript | a failed call must not leave history claiming a turn that never happened |
+| an empty delta is not a token | the runtime sends them as keep-alives |
+| Stop keeps the partial answer | the user watched those tokens arrive |
+
+Aborting the streaming task drops the stream, which is what tells the core to
+unload the model - the same unload-on-disconnect rule the gRPC service enforces.
+
+```text
+$ cd platforms/linux && cargo test
+test result: ok. 6 passed; 0 failed
+```

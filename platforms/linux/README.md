@@ -12,7 +12,7 @@ same `UiSnapshot` the Windows shell renders, through the same
 | Compiles | **yes** - GTK 4.22.4, Ubuntu 26.04, Rust 1.100 |
 | Runs headless | **yes** - `verify.sh` under Xvfb, against a real core |
 | Overview + Settings pages | working |
-| Chat page | **not implemented** (the Windows shell has one) |
+| Chat page | **implemented** - model id, prompt, transcript, Send/Stop/Clear |
 
 Verified output:
 
@@ -58,12 +58,26 @@ Two real defects that the Windows-only gate could never see:
 The argument for building on the platform you claim to support, in one
 sentence: `cargo check` on Windows said both files were fine.
 
+## Chat
+
+The chat page mirrors the Windows one: a model id, a prompt, the transcript, and
+Send / Stop / Clear. Two behaviours are deliberate:
+
+- **Stop keeps the partial answer.** The user watched those tokens arrive;
+  discarding them would be a surprise. Aborting the task also drops the stream,
+  which is what tells the core to unload the model.
+- **An empty prompt never reaches the core.** It would otherwise load a model to
+  answer nothing.
+
+The rules live in `src/chat.rs`, free of GTK, so they are tested without a
+display (`cargo test` in this directory: 6 tests).
+
 ## Not implemented
 
 | Capability | Why |
 | --- | --- |
-| Chat page | This shell only renders the snapshot. Adding chat means porting the streaming loop; the toolkit-free `ChatSession` logic currently lives in the C# project. |
-
+| System prompt field | `Transcript::set_system` exists and is tested, but no widget sets it yet |
+| Model picker | The model id is typed. A picker needs the registry list, which the Overview page does not request |
 ## Data root
 
 `$GGUF_AI_ENGINE_DATA_DIR`, else `~/.local/share/gguf-ai-engine` (spec §15).
