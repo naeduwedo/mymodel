@@ -1,0 +1,36 @@
+# Line endings: normalise to LF in the repository, native in the working tree.
+#
+# Why this matters here: the project is Rust (LF-only tooling), C# (MSBuild is
+# happiest with CRLF on Windows) and shell scripts that would break if they ever
+# arrived with CRLF. Git's per-file choice is not enough on its own, so it is
+# written down.
+* text=auto eol=lf
+
+# Windows-only sources: keep CRLF in the working tree so Visual Studio and
+# MSBuild do not rewrite them on every save.
+*.cs      text eol=crlf
+*.xaml    text eol=crlf
+*.csproj  text eol=crlf
+*.sln     text eol=crlf
+*.ps1     text eol=crlf
+*.appxmanifest text eol=crlf
+
+# Shell scripts must stay LF or the kernel refuses to execute them.
+*.sh      text eol=lf
+
+# Binary assets must never be normalised.
+*.png     binary
+*.ico     binary
+*.gguf    binary
+*.dll     binary
+*.exe     binary
+*.so      binary
+*.dylib   binary
+*.msix    binary
+
+# Generated code is committed (see ADR on C# stubs) but is not hand-edited, so
+# keep it out of diffs and merges.
+platforms/windows/GgufAiEngine.Shell.Core/Generated/*.cs linguist-generated=true
+
+# Lock file: generated, but a diff on it is meaningful.
+Cargo.lock text eol=lf
