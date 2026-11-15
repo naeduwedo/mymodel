@@ -12,6 +12,7 @@ gguf-engine-hardware = { workspace = true }
 gguf-engine-runtime-llama-cpp = { workspace = true }
 gguf-engine-runtime-manager = { workspace = true }
 gguf-engine-database = { workspace = true }
+gguf-engine-multimodal = { workspace = true }
 gguf-engine-event-bus = { workspace = true }
 gguf-engine-protocol = { workspace = true }
 gguf-engine-security = { workspace = true }

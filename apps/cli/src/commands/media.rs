@@ -148,7 +148,22 @@ pub async fn video(ctx: &Context, prompt: &str, options: VideoOptions, json: boo
         .await
         .map_err(describe)?;
 
-    let out = PathBuf::from(&options.out);
+    // The runtime chooses the container (webm for sd.cpp). Writing those bytes to
+    // a ".mp4" name would produce a file players refuse, so the extension follows
+    // the MIME type the runtime reported.
+    let requested = PathBuf::from(&options.out);
+    let out = match container_extension(&generated.mime_type) {
+        Some(extension) if requested.extension().and_then(|e| e.to_str()) != Some(extension) => {
+            let corrected = requested.with_extension(extension);
+            eprintln!(
+                "note     : the runtime produced {}, so the file is {}",
+                generated.mime_type,
+                corrected.display()
+            );
+            corrected
+        }
+        _ => requested,
+    };
     if let Some(parent) = out.parent() {
         std::fs::create_dir_all(parent).ok();
     }
@@ -288,6 +303,19 @@ pub fn speak(ctx: &Context, text: &str, out: &Path, json: bool) -> Result<bool> 
     }
 
     Ok(true)
+}
+
+/// The file extension for a container MIME type.
+///
+/// Returns `None` for types this build does not recognise, in which case the
+/// caller keeps whatever name it was given rather than inventing one.
+pub fn container_extension(mime_type: &str) -> Option<&'static str> {
+    match mime_type {
+        "video/webm" => Some("webm"),
+        "video/mp4" => Some("mp4"),
+        "image/png" => Some("png"),
+        _ => None,
+    }
 }
 
 fn describe(error: MultimodalError) -> anyhow::Error {

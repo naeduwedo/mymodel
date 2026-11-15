@@ -1,0 +1,72 @@
+syntax = "proto3";
+package gguf.v1;
+
+// Non-LLM media services (spec §2.3, §17 Task 8).
+//
+// These carry bytes rather than URLs because the caller is a local shell and the
+// files live on the same machine: a temporary path the shell had to clean up
+// would be more moving parts for no benefit.
+
+message ImageRequest {
+  string prompt = 1;
+  optional string negative_prompt = 2;
+  uint32 width = 3;
+  uint32 height = 4;
+  uint32 steps = 5;
+  optional int64 seed = 6;
+}
+
+message ImageReply {
+  // PNG bytes.
+  bytes png = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+}
+
+message VideoRequest {
+  string prompt = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+  uint32 frames = 4;
+  uint32 fps = 5;
+  optional int64 seed = 6;
+}
+
+message VideoReply {
+  // Encoded container bytes (mp4 or webm, whichever the runtime produced).
+  bytes video = 1;
+  string mime_type = 2;
+  uint32 frames = 3;
+}
+
+message SpeechRequest {
+  string text = 1;
+}
+
+message SpeechReply {
+  // WAV bytes.
+  bytes wav = 1;
+}
+
+message TranscriptionRequest {
+  // The audio file's bytes.
+  bytes audio = 1;
+  // Original file name; the extension tells the runtime the container.
+  string filename = 2;
+  optional string language = 3;
+}
+
+message TranscriptionReply {
+  string text = 1;
+}
+
+service MediaService {
+  // Image generation. FAILED_PRECONDITION when no diffusion runtime is available.
+  rpc GenerateImage(ImageRequest) returns (ImageReply);
+  // Video generation. Minutes, not seconds; the call blocks for the clip.
+  rpc GenerateVideo(VideoRequest) returns (VideoReply);
+  // Speech synthesis.
+  rpc Synthesise(SpeechRequest) returns (SpeechReply);
+  // Speech recognition.
+  rpc Transcribe(TranscriptionRequest) returns (TranscriptionReply);
+}

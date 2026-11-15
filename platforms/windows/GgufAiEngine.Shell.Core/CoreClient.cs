@@ -164,6 +164,74 @@ public sealed class CoreClient : IDisposable
             .ReadAllAsync(cancellationToken);
     }
 
+    /// <summary>Generate an image, returning PNG bytes.</summary>
+    /// <remarks>
+    /// The call blocks for the whole render: a 512x512 image takes seconds, and a
+    /// streaming progress channel would be more moving parts than the wait is
+    /// worth. The cancellation token still lets the window give up.
+    /// </remarks>
+    public async Task<byte[]> GenerateImageAsync(
+        ImageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var media = new MediaService.MediaServiceClient(_channel);
+        var reply = await media
+            .GenerateImageAsync(request, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return reply.Png.ToByteArray();
+    }
+
+    /// <summary>Generate a video clip, returning the encoded container bytes.</summary>
+    /// <remarks>
+    /// This takes minutes, not seconds. Callers should set a deadline that reflects
+    /// that; the default gRPC deadline would abandon a working render.
+    /// </remarks>
+    public async Task<VideoReply> GenerateVideoAsync(
+        VideoRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var media = new MediaService.MediaServiceClient(_channel);
+        return await media
+            .GenerateVideoAsync(request, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>Synthesise speech, returning WAV bytes.</summary>
+    public async Task<byte[]> SynthesiseAsync(
+        string text,
+        CancellationToken cancellationToken = default)
+    {
+        var media = new MediaService.MediaServiceClient(_channel);
+        var reply = await media
+            .SynthesiseAsync(new SpeechRequest { Text = text }, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return reply.Wav.ToByteArray();
+    }
+
+    /// <summary>Transcribe an audio file.</summary>
+    public async Task<string> TranscribeAsync(
+        byte[] audio,
+        string filename,
+        string? language = null,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new TranscriptionRequest
+        {
+            Audio = Google.Protobuf.ByteString.CopyFrom(audio),
+            Filename = filename,
+        };
+        if (!string.IsNullOrWhiteSpace(language))
+        {
+            request.Language = language;
+        }
+
+        var media = new MediaService.MediaServiceClient(_channel);
+        var reply = await media
+            .TranscribeAsync(request, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        return reply.Text;
+    }
+
     /// <inheritdoc />
     public void Dispose() => _channel.Dispose();
 }

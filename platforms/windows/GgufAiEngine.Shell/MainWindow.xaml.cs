@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Gguf.V1;
@@ -150,11 +151,13 @@ public sealed partial class MainWindow : Window
     {
         var tag = (args.SelectedItemContainer as NavigationViewItem)?.Tag as string;
         var showChat = string.Equals(tag, "chat", StringComparison.Ordinal);
+        var showCreate = string.Equals(tag, "create", StringComparison.Ordinal);
         var showSettings = string.Equals(tag, "settings", StringComparison.Ordinal);
-        var showOverview = !showChat && !showSettings;
+        var showOverview = !showChat && !showCreate && !showSettings;
 
         OverviewPanel.Visibility = showOverview ? Visibility.Visible : Visibility.Collapsed;
         ChatPanel.Visibility = showChat ? Visibility.Visible : Visibility.Collapsed;
+        CreatePanel.Visibility = showCreate ? Visibility.Visible : Visibility.Collapsed;
         SettingsPanel.Visibility = showSettings ? Visibility.Visible : Visibility.Collapsed;
 
         if (showChat)
@@ -258,6 +261,106 @@ public sealed partial class MainWindow : Window
             _chatCancellation = null;
             SetChatBusy(false);
         }
+    }
+
+    // ------------------------------------------------------------- create ----
+
+    private async void OnGenerateImageClicked(object sender, RoutedEventArgs e)
+    {
+        if (_client is null)
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Not connected", "Start the core first.");
+            return;
+        }
+
+        var prompt = ImagePromptBox.Text;
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Nothing to draw", "Describe the image first.");
+            return;
+        }
+
+        GenerateImageButton.IsEnabled = false;
+        ImageStatus.Text = "Generating... this takes seconds.";
+        CreateBar.IsOpen = false;
+
+        try
+        {
+            var request = new ImageRequest
+            {
+                Prompt = prompt,
+                Width = (uint)ImageWidthBox.Value,
+                Height = (uint)ImageHeightBox.Value,
+            };
+
+            // A diffusion render is tens of seconds; the default deadline would
+            // abandon a working call.
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            deadline.CancelAfter(TimeSpan.FromMinutes(10));
+
+            var png = await _client.GenerateImageAsync(request, deadline.Token);
+
+            var path = Path.Combine(Path.GetTempPath(), $"gguf-image-{DateTime.Now:HHmmss}.png");
+            await File.WriteAllBytesAsync(path, png);
+
+            ImageStatus.Text = $"Wrote {png.Length / 1024} KiB to {path}";
+        }
+        catch (Exception ex)
+        {
+            // A missing runtime is FAILED_PRECONDITION with the reason the probe
+            // produced, so showing the message verbatim is the useful thing to do.
+            ImageStatus.Text = "Failed.";
+            ShowCreateMessage(InfoBarSeverity.Error, "Image generation failed", ex.Message);
+        }
+        finally
+        {
+            GenerateImageButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnSpeakClicked(object sender, RoutedEventArgs e)
+    {
+        if (_client is null)
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Not connected", "Start the core first.");
+            return;
+        }
+
+        var text = SpeechTextBox.Text;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Nothing to say", "Enter some text first.");
+            return;
+        }
+
+        SpeakButton.IsEnabled = false;
+        SpeechStatus.Text = "Synthesising...";
+        CreateBar.IsOpen = false;
+
+        try
+        {
+            var wav = await _client.SynthesiseAsync(text, _lifetime.Token);
+            var path = Path.Combine(Path.GetTempPath(), $"gguf-speech-{DateTime.Now:HHmmss}.wav");
+            await File.WriteAllBytesAsync(path, wav);
+            SpeechStatus.Text = $"Wrote {wav.Length / 1024} KiB to {path}";
+        }
+        catch (Exception ex)
+        {
+            SpeechStatus.Text = "Failed.";
+            ShowCreateMessage(InfoBarSeverity.Error, "Speech synthesis failed", ex.Message);
+        }
+        finally
+        {
+            SpeakButton.IsEnabled = true;
+        }
+    }
+
+    private void ShowCreateMessage(InfoBarSeverity severity, string title, string message)
+    {
+        CreateBar.Severity = severity;
+        CreateBar.Title = title;
+        CreateBar.Message = message;
+        CreateBar.IsOpen = true;
     }
 
     private void SetChatBusy(bool busy)

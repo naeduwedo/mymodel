@@ -29,6 +29,7 @@
 pub mod client;
 pub mod error;
 pub mod inference;
+pub mod media;
 pub mod platform;
 pub mod services;
 pub mod state;

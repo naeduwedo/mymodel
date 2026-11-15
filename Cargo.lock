@@ -844,6 +844,7 @@ dependencies = [
  "gguf-engine-database",
  "gguf-engine-event-bus",
  "gguf-engine-hardware",
+ "gguf-engine-multimodal",
  "gguf-engine-protocol",
  "gguf-engine-runtime-llama-cpp",
  "gguf-engine-runtime-manager",

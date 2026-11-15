@@ -104,7 +104,7 @@ This is the failure mode the memory orchestrator in `crates/gpu-manager` exists
 to prevent (per-device budgets and expiring leases), observed from the other
 side: a leaked worker cost a 29x slowdown and looked like a broken runtime.
 
-## Video: implemented, happy path unverified
+## Video: verified
 
 `sd.cpp` generates video through an **asynchronous** job API, unlike images:
 
@@ -113,21 +113,39 @@ POST /sdcpp/v1/vid_gen   -> 202 { id, poll_url }
 GET  /sdcpp/v1/jobs/<id> -> { status, result: { b64_json, mime_type, frame_count } }
 ```
 
-The adapter implements queue + poll + decode, and its refusal path is verified
-against a real server:
+A clip was rendered, twice: once through the raw API and once through the adapter.
 
 ```text
-$ gguf video --prompt 'a fox running'
+$ gguf video --prompt 'a lighthouse on a cliff at sunset' --out clip.mp4 --frames 17 --fps 8
+runtime  : stable-diffusion.cpp (http://127.0.0.1:18903)
+request  : 512x320, 17 frames at 8 fps
+note     : a clip takes minutes; polling the runtime
+note     : the runtime produced video/webm, so the file is clip.webm
+wrote clip.webm (354.2 KiB, 17 frames)
+```
+
+| Measurement | Result |
+| --- | --- |
+| Model | Wan 2.1 T2V 1.3B, 9,370 MB resident (VRAM), FLOW mode |
+| Clip | 480x320, 17 frames, 6 steps |
+| Raw API | 78.4 s, 194 KB webm |
+| Through the adapter | 95.7 s, 354 KiB webm, 17 frames |
+
+The refusal path is verified too, against a server holding an image-only model:
+
+```text
 gguf: error: this runtime cannot generate video: loaded model does not support vid_gen
 ```
 
-That message comes from the runtime, through the adapter, to the user.
+**Why 1.3B and not A14B:** the A14B models here need both high-noise and low-noise
+transformers (13.3 GB + 13.3 GB) plus a 6.3 GB text encoder - about 33 GB against
+a 24 GB card. The 1.3B variant plus components is 9.4 GB and leaves room for the
+compute workspace, so it is the largest Wan that actually fits.
 
-**Not verified:** an actual clip. The available video models here are Wan 2.2
-14B (~21 GB of weights plus sd.cpp's workspace) and LTX-2.3 22B, neither of
-which fits the 24 GB card alongside the workspace that the image path already
-needs. Claiming a rendered clip would be inventing evidence, so it is not
-claimed. The command and the adapter are real; the numbers are not.
+**A detail the first attempt got wrong:** the runtime produces `webm`, but the
+command asked for `clip.mp4`. Writing webm bytes to a `.mp4` name produces a file
+players refuse, so the extension now follows the MIME type the runtime reported,
+and the change is announced rather than silent.
 
 ## Endpoints
 

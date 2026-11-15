@@ -430,7 +430,7 @@ from source and driven for real; music has none, and the report says so.
 | Runtime | Modality | Verified |
 | --- | --- | --- |
 | stable-diffusion.cpp (`sd-server`, CUDA 13.4) | image generation | **yes** - 512x512 PNG in 14.2 s |
-| stable-diffusion.cpp | video | adapter verified on its refusal path; **no clip rendered** (no model fits the 24 GB card) |
+| stable-diffusion.cpp | video | **yes** - Wan 2.1 T2V 1.3B: 17 frames in 95.7 s through the adapter; refusal path also verified |
 | whisper.cpp (`whisper-cli`, CUDA) | ASR | **yes** - round trip through SAPI speech |
 | Piper | TTS | **yes** - and its output transcribes back to the same sentence |
 | - | music | **no runtime**, and no adapter claims one |
@@ -470,6 +470,27 @@ per-device budgets and expiring leases exist to prevent, seen from the outside.
 | Capability | Why |
 | --- | --- |
 | Music generation | no ggml-based music runtime is integrated; adding one means a new adapter and a manifest, not a flag |
-| Rendering a video clip | the only video models here (Wan 2.2 14B, LTX 22B) do not fit beside the workspace sd.cpp needs |
+| Rendering with Wan 2.2 A14B | it needs both 13.3 GB transformers plus a 6.3 GB encoder; the 1.3B variant is what fits a 24 GB card |
 | Starting the diffusion server automatically | the model must be on its command line; the engine points at a server the user runs |
 | `/v1/audio` in the UI shells | the endpoints exist; the shells have no audio page yet |
+## Follow-up - shells get the media services: **done (Windows)**
+
+The Create page drives `MediaService` over the same gRPC transport the shells
+already use, so no shell grows an HTTP client.
+
+| Piece | State |
+| --- | --- |
+| `proto/media.proto` + `MediaService` | done: image, video, speech, transcription |
+| `crates/multimodal::MediaEngine` | done: one implementation shared by gRPC and the HTTP gateway |
+| `crates/ipc/src/media.rs` | done: missing runtime -> `FAILED_PRECONDITION` with the probe's reason |
+| Windows Create page | done: prompt, size, Generate, Synthesise, status lines |
+| Linux Create page | **not done** |
+
+Verified with UI Automation after selecting the page (a collapsed panel is not in
+the automation tree, so the selection is part of the check):
+
+```text
+elements after selecting Create: 32
+  [ok] Create   [ok] Image    [ok] Speech   [ok] Generate   [ok] Synthesise
+  [ok] Describe the image...   [ok] Text to speak...   [ok] Width   [ok] Height
+```

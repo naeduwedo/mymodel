@@ -15,6 +15,7 @@
 
 #![warn(missing_docs)]
 
+pub mod engine;
 pub mod error;
 pub mod image;
 pub mod manifest;
@@ -23,6 +24,7 @@ pub mod probe;
 pub mod speech;
 pub mod video;
 
+pub use engine::{MediaEngine, runtime_binary};
 pub use error::MultimodalError;
 pub use image::{GeneratedImage, ImageRequest, generate as generate_image};
 pub use manifest::{Invocation, RuntimeKind, RuntimeManifest, builtin_manifests};

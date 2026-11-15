@@ -17,6 +17,7 @@ use tracing::{error, info, warn};
 
 use crate::error::IpcError;
 use crate::inference::InferenceService;
+use crate::media::MediaService;
 use crate::services::{
     EventService, HardwareService, HealthService, ModelService, RuntimeService, UiService,
 };
@@ -91,6 +92,9 @@ fn router(state: &CoreState) -> tonic::transport::server::Router {
         ))
         .add_service(pb::inference_service_server::InferenceServiceServer::new(
             InferenceService::new(state.clone()),
+        ))
+        .add_service(pb::media_service_server::MediaServiceServer::new(
+            MediaService::new(state),
         ))
 }
 

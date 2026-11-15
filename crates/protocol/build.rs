@@ -27,6 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "model.proto",
         "runtime.proto",
         "inference.proto",
+        "media.proto",
         "task.proto",
         "ui.proto",
     ];

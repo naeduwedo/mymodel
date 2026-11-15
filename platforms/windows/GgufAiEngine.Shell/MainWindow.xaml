@@ -28,6 +28,7 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Overview" Tag="overview" Icon="Home" IsSelected="True" />
                 <NavigationViewItem Content="Chat" Tag="chat" Icon="Message" />
+                <NavigationViewItem Content="Create" Tag="create" Icon="Pictures" />
                 <NavigationViewItem Content="Settings" Tag="settings" Icon="Setting" />
             </NavigationView.MenuItems>
 
@@ -169,6 +170,37 @@
                             Style="{StaticResource CaptionTextBlockStyle}"
                             Opacity="0.7"
                             Text="Choose a model that is already downloaded." />
+                    </StackPanel>
+
+                    <StackPanel x:Name="CreatePanel" Spacing="12" Visibility="Collapsed">
+                        <TextBlock Text="Create" Style="{StaticResource TitleTextBlockStyle}" />
+
+                        <!-- Image generation. The runtime is a separate process; if it
+                             is not running the core answers FAILED_PRECONDITION and
+                             the bar below shows why. -->
+                        <TextBlock Text="Image" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBox x:Name="ImagePromptBox" PlaceholderText="Describe the image..." />
+                        <Grid ColumnDefinitions="Auto,120,Auto,120,Auto,*" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0" Text="Width" VerticalAlignment="Center" />
+                            <NumberBox x:Name="ImageWidthBox" Grid.Column="1" Value="512" Minimum="64" Maximum="2048" SpinButtonPlacementMode="Compact" />
+                            <TextBlock Grid.Column="2" Text="Height" VerticalAlignment="Center" />
+                            <NumberBox x:Name="ImageHeightBox" Grid.Column="3" Value="512" Minimum="64" Maximum="2048" SpinButtonPlacementMode="Compact" />
+                            <Button x:Name="GenerateImageButton" Grid.Column="4" Content="Generate" Style="{StaticResource AccentButtonStyle}" Click="OnGenerateImageClicked" />
+                        </Grid>
+                        <TextBlock x:Name="ImageStatus" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+
+                        <TextBlock Text="Speech" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBox x:Name="SpeechTextBox" PlaceholderText="Text to speak..." />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <Button x:Name="SpeakButton" Grid.Column="0" Content="Synthesise" Click="OnSpeakClicked" />
+                            <TextBlock x:Name="SpeechStatus" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                        </Grid>
+
+                        <InfoBar
+                            x:Name="CreateBar"
+                            Severity="Informational"
+                            IsOpen="False"
+                            IsClosable="False" />
                     </StackPanel>
 
                     <StackPanel x:Name="SettingsPanel" Spacing="16" Visibility="Collapsed">
