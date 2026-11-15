@@ -60,6 +60,7 @@ async fn probes_loads_streams_and_unloads_a_real_model() {
         model_path: model.clone(),
         gpu_layers: Some(99),
         context_size: 256,
+        mode: gguf_engine_runtime_manager::LoadMode::Chat,
     };
     let instance = adapter.load(&plan).await.expect("load");
     assert!(instance.worker_pid.is_some());

@@ -45,6 +45,26 @@ message TaskProgress {
   optional double tokens_per_second = 4;
 }
 
+message EmbeddingsRequest {
+  string model_id = 1;
+  repeated string input = 2;
+}
+
+message EmbeddingsResponse {
+  string model_id = 1;
+  // One vector per input, in the order the inputs were given.
+  repeated Embedding embeddings = 2;
+  uint32 dimensions = 3;
+}
+
+message Embedding {
+  // The vector. Empty when the runtime returned nothing for this input.
+  repeated float values = 1;
+}
+
 service InferenceService {
   rpc Chat(ChatRequest) returns (stream ChatChunk);
+  // Vector embeddings. Requires a model the runtime can run in embedding mode;
+  // a chat model returns FAILED_PRECONDITION rather than a meaningless vector.
+  rpc Embeddings(EmbeddingsRequest) returns (EmbeddingsResponse);
 }

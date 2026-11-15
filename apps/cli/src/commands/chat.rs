@@ -28,6 +28,7 @@ pub async fn chat(model: &str, prompt: &str, max_tokens: u32, temperature: f32) 
         model_path: model.to_owned(),
         gpu_layers: if gpu { Some(99) } else { Some(0) },
         context_size: 2048,
+        mode: gguf_engine_runtime_manager::LoadMode::Chat,
     };
 
     eprintln!("loading  : {model}");

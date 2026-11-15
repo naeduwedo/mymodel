@@ -60,18 +60,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install GTK 4 development headers
+      - name: Install GTK 4 headers and a virtual display
+        # xvfb is not optional here: the shell is a GUI, and "it compiles" does
+        # not prove the window is built or that the core is reached.
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev pkg-config
+          sudo apt-get install -y libgtk-4-dev pkg-config xvfb
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Build the shell
-        # This is what turns the Linux shell from "written" into "verified".
-        # It is a standalone package, not a workspace member.
+      - name: Build and verify the shell headlessly
+        # verify.sh starts a real core, launches the shell under Xvfb, and fails
+        # unless the window survives without logging a critical error. This is
+        # what turns the Linux shell from "written" into "verified".
+        run: bash platforms/linux/verify.sh
+
+      - name: Shell build honours the lockfile
         working-directory: platforms/linux
-        run: cargo build --locked
+        run: cargo build --locked --offline || cargo build --locked
 
   macos-shell:
     name: macOS shell (SwiftUI)

@@ -48,7 +48,7 @@ documented crate shell.
 | Shell | State | Evidence |
 | --- | --- | --- |
 | Windows (WinUI 3, C#/XAML) | **implemented and tested** | `dotnet build` clean; 20 xunit tests, including end-to-end against the real `gguf-core` over the real named pipe |
-| Linux (GTK4, gtk4-rs) | **written, unverified** | `platforms/linux`; CI job `platform-shells.yml` is what verifies it (no GTK on the dev machine) |
+| Linux (GTK4, gtk4-rs) | **built and verified** | `platforms/linux/verify.sh`: real core + Xvfb, window survives 8 s, no critical errors. Building it found two real defects (see below) |
 | macOS (SwiftUI, AppKit) | **planned** | `platforms/macos/README.md` states what is missing and why no code is shipped |
 
 The core produces one presentation snapshot (`proto/ui.proto`, `UiService/
@@ -308,3 +308,46 @@ navigation item and renders real values (`2 device(s), 36.0 GiB VRAM`,
 
 `crates/inference` was deleted: it was a placeholder, and the real implementation
 lives in `crates/ipc/src/inference.rs`.
+## Follow-up - Linux shell verified: **done**
+
+Building the GTK4 shell on Linux for the first time found two defects that the
+Windows-only gate could never see:
+
+| Defect | Consequence |
+| --- | --- |
+| `crates/ipc/src/client.rs` `#[cfg(unix)]` connector captured a borrowed `&str` where `'static` was required | the Unix-socket client **did not compile at all** |
+| `glib` was used but never declared in `platforms/linux/Cargo.toml` | `MainContext::spawn_local` did not resolve |
+
+Verification is now executable rather than asserted:
+
+```text
+$ bash platforms/linux/verify.sh
+== starting the core
+   core ready
+== launching the shell under Xvfb for 8 seconds
+   shell stayed alive and was stopped by the timeout
+== errors logged by the shell
+   none
+== PASS
+```
+
+`verify.sh` treats exit 124 (the timeout killing a still-running app) as success
+and anything else as failure, so a shell that starts and dies cannot pass.
+
+## Follow-up - embeddings: **done**
+
+| Deliverable | State | Evidence |
+| --- | --- | --- |
+| `InferenceService.Embeddings` | done | new RPC; loads the worker in embedding mode |
+| `POST /v1/embeddings` | done | OpenAI shape; string or array input |
+| Honest refusal | done | a model that cannot run in embedding mode returns `FAILED_PRECONDITION`, not a meaningless vector |
+
+```text
+$ curl 127.0.0.1:18888/v1/embeddings -d '{"model":"ggml-org/models","input":["hello","world"]}'
+object: list  count: 2  vector[0] length: 64
+first 3 values: 1.0292757, -1.3270983, 0.1801005
+```
+
+llama.cpp exposes embeddings on its native `/embedding` endpoint (one input per
+request) and its `/v1/embeddings` answers 400 on this build, so the gateway
+translates and sends one request per input rather than pretending to batch.

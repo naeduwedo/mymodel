@@ -86,6 +86,23 @@ impl CoreClient {
         Ok(reply.into_inner())
     }
 
+    /// Vector embeddings for a batch of inputs.
+    pub async fn embeddings(
+        &self,
+        model_id: &str,
+        inputs: Vec<String>,
+    ) -> Result<pb::EmbeddingsResponse, IpcError> {
+        let mut client =
+            pb::inference_service_client::InferenceServiceClient::new(self.channel.clone());
+        let reply = client
+            .embeddings(pb::EmbeddingsRequest {
+                model_id: model_id.to_owned(),
+                input: inputs,
+            })
+            .await?;
+        Ok(reply.into_inner())
+    }
+
     /// Stream events after `after_seq`, replaying from the core's ring first.
     pub async fn subscribe(&self, after_seq: u64) -> Result<tonic::Streaming<pb::Event>, IpcError> {
         let mut client = pb::event_service_client::EventServiceClient::new(self.channel.clone());
@@ -142,12 +159,16 @@ async fn connect_channel(endpoint: &str) -> Result<Channel, IpcError> {
 #[cfg(unix)]
 async fn connect_channel(endpoint: &str) -> Result<Channel, IpcError> {
     if endpoint.starts_with('/') {
+        // The connector must be 'static, so the socket path is owned before the
+        // closure is built. Capturing the borrowed &str here does not compile on
+        // any platform - which Windows-only builds never discovered.
+        let path = endpoint.to_owned();
         let uri =
             Endpoint::from_static("http://localhost/_sock").connect_timeout(IPC_CONNECT_TIMEOUT);
         debug!(%endpoint, "connecting over a Unix socket");
         return uri
             .connect_with_connector(tower::service_fn(move |_| {
-                let path = endpoint.to_owned();
+                let path = path.clone();
                 async move {
                     Ok::<_, std::io::Error>(hyper_util::rt::TokioIo::new(
                         tokio::net::UnixStream::connect(path).await?,

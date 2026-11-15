@@ -139,6 +139,7 @@ impl RuntimeAdapter for LlamaCppAdapter {
             port,
             plan.gpu_layers.unwrap_or(0),
             plan.context_size.max(128),
+            plan.mode == gguf_engine_runtime_manager::LoadMode::Embeddings,
             &stderr_file,
         )
         .await?;

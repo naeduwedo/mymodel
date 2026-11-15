@@ -45,6 +45,7 @@ pub async fn spawn(
     port: u16,
     gpu_layers: u32,
     context_size: u32,
+    embeddings: bool,
     stderr_file: &Path,
 ) -> Result<Worker, RuntimeError> {
     let base_url = format!("http://127.0.0.1:{port}");
@@ -52,7 +53,13 @@ pub async fn spawn(
     let stderr =
         std::fs::File::create(stderr_file).map_err(|err| RuntimeError::Start(err.to_string()))?;
 
-    let child = Command::new(server_path)
+    let mut command = Command::new(server_path);
+    if embeddings {
+        // The worker must be told at startup; there is no request-time switch.
+        command.arg("--embeddings");
+    }
+
+    let child = command
         .arg("--model")
         .arg(model_path)
         .arg("--port")

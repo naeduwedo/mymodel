@@ -49,6 +49,10 @@ namespace Gguf.V1 {
     static readonly grpc::Marshaller<global::Gguf.V1.ChatRequest> __Marshaller_gguf_v1_ChatRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.ChatRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Gguf.V1.ChatChunk> __Marshaller_gguf_v1_ChatChunk = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.ChatChunk.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Gguf.V1.EmbeddingsRequest> __Marshaller_gguf_v1_EmbeddingsRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.EmbeddingsRequest.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Gguf.V1.EmbeddingsResponse> __Marshaller_gguf_v1_EmbeddingsResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.EmbeddingsResponse.Parser));
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::Gguf.V1.ChatRequest, global::Gguf.V1.ChatChunk> __Method_Chat = new grpc::Method<global::Gguf.V1.ChatRequest, global::Gguf.V1.ChatChunk>(
@@ -57,6 +61,14 @@ namespace Gguf.V1 {
         "Chat",
         __Marshaller_gguf_v1_ChatRequest,
         __Marshaller_gguf_v1_ChatChunk);
+
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Method<global::Gguf.V1.EmbeddingsRequest, global::Gguf.V1.EmbeddingsResponse> __Method_Embeddings = new grpc::Method<global::Gguf.V1.EmbeddingsRequest, global::Gguf.V1.EmbeddingsResponse>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "Embeddings",
+        __Marshaller_gguf_v1_EmbeddingsRequest,
+        __Marshaller_gguf_v1_EmbeddingsResponse);
 
     /// <summary>Service descriptor</summary>
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
@@ -100,6 +112,58 @@ namespace Gguf.V1 {
       public virtual grpc::AsyncServerStreamingCall<global::Gguf.V1.ChatChunk> Chat(global::Gguf.V1.ChatRequest request, grpc::CallOptions options)
       {
         return CallInvoker.AsyncServerStreamingCall(__Method_Chat, null, options, request);
+      }
+      /// <summary>
+      /// Vector embeddings. Requires a model the runtime can run in embedding mode;
+      /// a chat model returns FAILED_PRECONDITION rather than a meaningless vector.
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+      /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+      /// <param name="cancellationToken">An optional token for canceling the call.</param>
+      /// <returns>The response received from the server.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Gguf.V1.EmbeddingsResponse Embeddings(global::Gguf.V1.EmbeddingsRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return Embeddings(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      /// <summary>
+      /// Vector embeddings. Requires a model the runtime can run in embedding mode;
+      /// a chat model returns FAILED_PRECONDITION rather than a meaningless vector.
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="options">The options for the call.</param>
+      /// <returns>The response received from the server.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Gguf.V1.EmbeddingsResponse Embeddings(global::Gguf.V1.EmbeddingsRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_Embeddings, null, options, request);
+      }
+      /// <summary>
+      /// Vector embeddings. Requires a model the runtime can run in embedding mode;
+      /// a chat model returns FAILED_PRECONDITION rather than a meaningless vector.
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+      /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+      /// <param name="cancellationToken">An optional token for canceling the call.</param>
+      /// <returns>The call object.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Gguf.V1.EmbeddingsResponse> EmbeddingsAsync(global::Gguf.V1.EmbeddingsRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return EmbeddingsAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      /// <summary>
+      /// Vector embeddings. Requires a model the runtime can run in embedding mode;
+      /// a chat model returns FAILED_PRECONDITION rather than a meaningless vector.
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="options">The options for the call.</param>
+      /// <returns>The call object.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Gguf.V1.EmbeddingsResponse> EmbeddingsAsync(global::Gguf.V1.EmbeddingsRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_Embeddings, null, options, request);
       }
       /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]

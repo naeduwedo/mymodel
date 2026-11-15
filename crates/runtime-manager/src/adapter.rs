@@ -38,6 +38,22 @@ impl MemoryEstimate {
     }
 }
 
+/// What the loaded worker will be used for (spec section 8.2).
+///
+/// llama.cpp needs to know at startup: a worker started for chat cannot answer an
+/// embedding request, and one started with `--embeddings` refuses to chat. Making
+/// the mode part of the plan is what keeps the failure at load time, where it can
+/// explain itself, instead of at the first request.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LoadMode {
+    /// Text generation (the default).
+    #[default]
+    Chat,
+    /// Vector embeddings.
+    Embeddings,
+}
+
 /// A load plan: what to load, onto which devices (spec section 5.5).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadPlan {
@@ -47,6 +63,9 @@ pub struct LoadPlan {
     pub gpu_layers: Option<u32>,
     /// Context size in tokens.
     pub context_size: u32,
+    /// What the worker will be used for.
+    #[serde(default)]
+    pub mode: LoadMode,
 }
 
 /// The common boundary every runtime adapter implements.

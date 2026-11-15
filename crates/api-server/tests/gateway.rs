@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use gguf_engine_api_server::{
     ApiConfig, ApiError, Backend, ChatMessage, ChunkStream, ConfigError, MIN_TOKEN_LEN, ModelEntry,
-    serve,
+    backend::EmbeddingsOutcome, serve,
 };
 
 // ---------------------------------------------------------------- config ----
@@ -124,6 +124,25 @@ impl Backend for FakeBackend {
                 yield Ok(delta);
             }
         }))
+    }
+
+    async fn embeddings(
+        &self,
+        model: &str,
+        inputs: Vec<String>,
+    ) -> Result<EmbeddingsOutcome, ApiError> {
+        if model == "missing" {
+            return Err(ApiError::ModelNotFound(model.to_owned()));
+        }
+
+        // Two dimensions is enough to prove ordering and shape; the real vector
+        // width comes from the runtime.
+        Ok(EmbeddingsOutcome {
+            vectors: inputs
+                .iter()
+                .map(|input| vec![input.len() as f32, 0.5])
+                .collect(),
+        })
     }
 }
 
@@ -359,6 +378,110 @@ async fn an_error_mid_stream_is_reported_as_a_data_event() {
 
     // The status was already sent, so the failure must arrive in the stream.
     assert!(text.contains("the worker died"), "{text}");
+
+    server.stop();
+}
+#[tokio::test]
+async fn embeddings_accept_a_single_string_input() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let body: serde_json::Value = reqwest::Client::new()
+        .post(format!("http://{address}/v1/embeddings"))
+        .json(&serde_json::json!({ "model": "test/model", "input": "hello" }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+
+    assert_eq!(body["object"], "list");
+    assert_eq!(body["data"][0]["object"], "embedding");
+    assert_eq!(body["data"][0]["index"], 0);
+    assert_eq!(body["data"][0]["embedding"].as_array().unwrap().len(), 2);
+
+    server.stop();
+}
+
+#[tokio::test]
+async fn embeddings_accept_an_array_and_preserve_order() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let body: serde_json::Value = reqwest::Client::new()
+        .post(format!("http://{address}/v1/embeddings"))
+        .json(&serde_json::json!({
+            "model": "test/model",
+            "input": ["a", "bbb"]
+        }))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+
+    let data = body["data"].as_array().unwrap();
+    assert_eq!(data.len(), 2);
+    // The fake returns the input length as the first component, so ordering is
+    // observable: "a" (1) must come before "bbb" (3).
+    assert_eq!(data[0]["embedding"][0], 1.0);
+    assert_eq!(data[1]["embedding"][0], 3.0);
+
+    server.stop();
+}
+
+#[tokio::test]
+async fn an_empty_embedding_input_is_a_400_and_loads_nothing() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/embeddings"))
+        .json(&serde_json::json!({ "model": "test/model", "input": [] }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+
+    server.stop();
+}
+
+#[tokio::test]
+async fn a_non_string_embedding_input_is_a_400() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/embeddings"))
+        .json(&serde_json::json!({ "model": "test/model", "input": [1, 2, 3] }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+    let body: serde_json::Value = response.json().await.unwrap();
+    assert!(
+        body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("array of strings"),
+        "{body}"
+    );
+
+    server.stop();
+}
+
+#[tokio::test]
+async fn an_unknown_model_for_embeddings_is_a_404() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/embeddings"))
+        .json(&serde_json::json!({ "model": "missing", "input": "hi" }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::NOT_FOUND);
 
     server.stop();
 }

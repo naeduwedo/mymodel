@@ -174,3 +174,60 @@ pub struct ErrorDetail {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
 }
+/// An OpenAI embeddings request.
+///
+/// `input` is either a single string or an array; both are accepted because the
+/// OpenAI clients in the wild send both, and rejecting one would be a gratuitous
+/// incompatibility.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct EmbeddingsRequest {
+    /// Model id.
+    pub model: String,
+    /// Text or texts to embed.
+    pub input: serde_json::Value,
+}
+
+impl EmbeddingsRequest {
+    /// Normalise `input` into a list of strings.
+    pub fn into_inputs(self) -> Result<Vec<String>, crate::error::ApiError> {
+        match self.input {
+            serde_json::Value::String(text) => Ok(vec![text]),
+            serde_json::Value::Array(items) => items
+                .into_iter()
+                .map(|item| match item {
+                    serde_json::Value::String(text) => Ok(text),
+                    _ => Err(crate::error::ApiError::Invalid(
+                        "input must be a string or an array of strings".to_owned(),
+                    )),
+                })
+                .collect(),
+            _ => Err(crate::error::ApiError::Invalid(
+                "input must be a string or an array of strings".to_owned(),
+            )),
+        }
+    }
+}
+
+/// One embedding in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmbeddingData {
+    /// Always "embedding".
+    pub object: String,
+    /// Position in the input list.
+    pub index: u32,
+    /// The vector.
+    pub embedding: Vec<f32>,
+}
+
+/// An OpenAI embeddings response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmbeddingsResponse {
+    /// Always "list".
+    pub object: String,
+    /// One entry per input.
+    pub data: Vec<EmbeddingData>,
+    /// Model used.
+    pub model: String,
+    /// Token accounting.
+    pub usage: Usage,
+}

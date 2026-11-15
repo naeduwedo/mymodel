@@ -33,6 +33,24 @@ pub trait Backend: Send + Sync {
         max_tokens: u32,
         temperature: f32,
     ) -> Result<ChunkStream, ApiError>;
+
+    /// Embeddings for a batch of inputs.
+    ///
+    /// A runtime that cannot run the model in embedding mode returns an error
+    /// rather than a meaningless vector: the caller asked a question the model
+    /// cannot answer, and silence would be worse than a refusal.
+    async fn embeddings(
+        &self,
+        model: &str,
+        inputs: Vec<String>,
+    ) -> Result<EmbeddingsOutcome, ApiError>;
+}
+
+/// The result of an embedding call.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EmbeddingsOutcome {
+    /// One vector per input, in order.
+    pub vectors: Vec<Vec<f32>>,
 }
 
 /// A backend over the core's local gRPC transport.
@@ -122,6 +140,26 @@ impl Backend for IpcBackend {
                 }
             }
         }))
+    }
+
+    async fn embeddings(
+        &self,
+        model: &str,
+        inputs: Vec<String>,
+    ) -> Result<EmbeddingsOutcome, ApiError> {
+        let client = self.client().await?;
+        let response = client
+            .embeddings(model, inputs)
+            .await
+            .map_err(|err| map_status(&err))?;
+
+        Ok(EmbeddingsOutcome {
+            vectors: response
+                .embeddings
+                .into_iter()
+                .map(|embedding| embedding.values)
+                .collect(),
+        })
     }
 }
 

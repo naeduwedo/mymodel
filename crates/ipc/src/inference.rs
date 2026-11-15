@@ -22,7 +22,8 @@ use std::time::Instant;
 use gguf_engine_protocol::pb;
 use gguf_engine_runtime_llama_cpp::LlamaCppAdapter;
 use gguf_engine_runtime_manager::{
-    ChatMessage, ChatRequest as AdapterChatRequest, LoadPlan, RuntimeAdapter, RuntimeInstance,
+    ChatMessage, ChatRequest as AdapterChatRequest, LoadMode, LoadPlan, RuntimeAdapter,
+    RuntimeInstance,
 };
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tokio_stream::{Stream, StreamExt};
@@ -150,6 +151,81 @@ impl Drop for UnloadGuard {
 impl pb::inference_service_server::InferenceService for InferenceService {
     type ChatStream = Pin<Box<dyn Stream<Item = Result<pb::ChatChunk, Status>> + Send>>;
 
+    async fn embeddings(
+        &self,
+        request: Request<pb::EmbeddingsRequest>,
+    ) -> Result<Response<pb::EmbeddingsResponse>, Status> {
+        let request = request.into_inner();
+
+        let Some(adapter) = self.adapter.clone() else {
+            return Err(Status::unimplemented(
+                "no runtime is installed: install llama.cpp and set GGUF_LLAMA_CPP_DIR",
+            ));
+        };
+
+        if request.input.is_empty() {
+            return Err(Status::invalid_argument("input must not be empty"));
+        }
+        if request.model_id.trim().is_empty() {
+            return Err(Status::invalid_argument("model_id must not be empty"));
+        }
+
+        let permit = self.slots.clone().try_acquire_owned().map_err(|_| {
+            Status::resource_exhausted("another model is loaded; wait for that answer to finish")
+        })?;
+
+        let model_path = self.resolve_model(&request.model_id).await?;
+
+        // Embeddings need a worker started in embedding mode; there is no
+        // request-time switch, which is why the mode is part of the load plan.
+        let plan = LoadPlan {
+            model_path: model_path.display().to_string(),
+            gpu_layers: None,
+            context_size: DEFAULT_CONTEXT,
+            mode: LoadMode::Embeddings,
+        };
+
+        let instance = adapter.load(&plan).await.map_err(|err| {
+            warn!(error = %err, "loading the model for embeddings failed");
+            Status::failed_precondition(format!(
+                "this model cannot be loaded in embedding mode: {err}"
+            ))
+        })?;
+
+        let Some(endpoint) = instance.endpoint.clone() else {
+            let _ = adapter.unload(instance).await;
+            drop(permit);
+            return Err(Status::internal("the worker did not report an endpoint"));
+        };
+
+        let vectors =
+            gguf_engine_runtime_llama_cpp::client::embeddings(&endpoint, &request.input).await;
+
+        // Unload before returning, whatever happened: an embedding call leaves no
+        // model resident, because the next request may need a different one.
+        let unload = adapter.unload(instance).await;
+        drop(permit);
+        if let Err(err) = unload {
+            warn!(error = %err, "unloading after an embedding request failed");
+        }
+
+        let vectors = vectors.map_err(|err| {
+            Status::failed_precondition(format!("the runtime refused the embedding request: {err}"))
+        })?;
+
+        let dimensions = vectors.first().map(|vector| vector.len()).unwrap_or(0);
+        let embeddings: Vec<pb::Embedding> = vectors
+            .into_iter()
+            .map(|values| pb::Embedding { values })
+            .collect();
+
+        Ok(Response::new(pb::EmbeddingsResponse {
+            model_id: request.model_id,
+            embeddings,
+            dimensions: dimensions as u32,
+        }))
+    }
+
     async fn chat(
         &self,
         request: Request<pb::ChatRequest>,
@@ -182,6 +258,7 @@ impl pb::inference_service_server::InferenceService for InferenceService {
             model_path: model_path.display().to_string(),
             gpu_layers: None,
             context_size: DEFAULT_CONTEXT,
+            mode: LoadMode::Chat,
         };
 
         let instance = adapter.load(&plan).await.map_err(|err| {

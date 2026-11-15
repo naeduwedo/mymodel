@@ -19,5 +19,8 @@ gguf-engine-protocol = { path = "../../crates/protocol" }
 gguf-engine-ipc = { path = "../../crates/ipc" }
 
 gtk = { version = "0.9", package = "gtk4" }
+# Used for MainContext::spawn_local. gtk4 re-exports glib but does not make it
+# nameable, so the crate that the API actually belongs to is declared.
+glib = "0.20"
 async-channel = "2.3"
 tokio = { version = "1", features = ["rt", "time"] }

@@ -163,6 +163,64 @@ pub fn stream_completion(
     Box::pin(stream)
 }
 
+/// Ask the worker for embeddings of `inputs`.
+///
+/// Uses llama.cpp's native `/embedding` endpoint. It takes one `content` per
+/// request, so several inputs are sent one at a time: batching them is not
+/// supported by this endpoint, and pretending otherwise would silently return
+/// fewer vectors than were asked for.
+pub async fn embeddings(base_url: &str, inputs: &[String]) -> Result<Vec<Vec<f32>>, RuntimeError> {
+    let client = reqwest::Client::new();
+    let mut vectors = Vec::with_capacity(inputs.len());
+
+    for input in inputs {
+        let response = client
+            .post(format!("{base_url}/embedding"))
+            .json(&serde_json::json!({ "content": input }))
+            .send()
+            .await
+            .map_err(|err| RuntimeError::Start(format!("requesting embeddings: {err}")))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let text = response.text().await.unwrap_or_default();
+            // A chat model started without --embeddings answers like this, so
+            // the message must say what happened rather than "HTTP 400".
+            return Err(RuntimeError::Start(format!(
+                "the worker refused an embedding request ({status}): {}",
+                text.chars().take(300).collect::<String>()
+            )));
+        }
+
+        let parsed: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|err| RuntimeError::Start(format!("reading embeddings: {err}")))?;
+
+        // llama.cpp answers with [{index, embedding: [[...]]}]; the inner nesting
+        // is one batch, so the first element is this input's vector.
+        let vector = parsed
+            .as_array()
+            .and_then(|items| items.first())
+            .and_then(|item| item.get("embedding"))
+            .and_then(|embedding| embedding.as_array())
+            .and_then(|batch| batch.first())
+            .and_then(|first| first.as_array())
+            .map(|values| {
+                values
+                    .iter()
+                    .filter_map(serde_json::Value::as_f64)
+                    .map(|value| value as f32)
+                    .collect::<Vec<f32>>()
+            })
+            .unwrap_or_default();
+
+        vectors.push(vector);
+    }
+
+    Ok(vectors)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

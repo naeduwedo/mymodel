@@ -16,7 +16,7 @@ pub mod benchmark;
 pub mod modality;
 pub mod types;
 
-pub use adapter::{BoxedAdapter, LoadPlan, MemoryEstimate, RuntimeAdapter, TokenStream};
+pub use adapter::{BoxedAdapter, LoadMode, LoadPlan, MemoryEstimate, RuntimeAdapter, TokenStream};
 pub use benchmark::{
     BenchmarkReport, RunSample, StrategyReport, peak_vram_during, sample_vram_bytes,
     strategy_layers,

@@ -44,6 +44,7 @@ pub async fn benchmark(model: &str, runs: usize, json: bool) -> Result<bool> {
             model_path: model.to_owned(),
             gpu_layers: Some(gpu_layers),
             context_size: 2048,
+            mode: gguf_engine_runtime_manager::LoadMode::Chat,
         };
 
         // Load time is measured, not guessed: it is the number a user feels.

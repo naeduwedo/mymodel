@@ -5,10 +5,11 @@
 //! severity and formatted value comes from the core, so the two shells cannot
 //! describe the same core state differently.
 //!
-//! STATUS: unverified. This file has not been compiled on the machine that wrote
-//! it (no GTK 4 headers available there). It is kept deliberately small so a
-//! reviewer can check it by reading, and it is only claimed to work once the
-//! Linux CI job in .github/workflows/platform-shells.yml is green.
+//! STATUS: builds and runs on Linux (GTK 4.22, Ubuntu 26.04, Rust 1.100).
+//! `platforms/linux/verify.sh` starts a real core, launches this shell under
+//! Xvfb, and fails unless the window survives eight seconds without logging a
+//! critical error. The chat page is not implemented here yet; Overview and
+//! Settings are.
 
 use std::path::PathBuf;
 use std::time::Duration;

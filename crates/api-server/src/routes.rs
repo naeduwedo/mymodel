@@ -28,7 +28,7 @@ use crate::config::ApiConfig;
 use crate::error::ApiError;
 use crate::openai::{
     ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, Choice,
-    ChunkChoice, Delta, ModelList, Usage,
+    ChunkChoice, Delta, EmbeddingData, EmbeddingsRequest, EmbeddingsResponse, ModelList, Usage,
 };
 
 /// Shared state for every handler.
@@ -57,6 +57,7 @@ pub fn router(state: AppState) -> Router {
         .route("/health", get(health))
         .route("/v1/models", get(list_models))
         .route("/v1/chat/completions", post(chat_completions))
+        .route("/v1/embeddings", post(embeddings))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             authorise_and_set_headers,
@@ -185,6 +186,51 @@ async fn chat_completions(
         },
     })
     .into_response())
+}
+
+async fn embeddings(
+    State(state): State<AppState>,
+    body: Result<Json<EmbeddingsRequest>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<EmbeddingsResponse>, ApiError> {
+    let Json(request) = body?;
+
+    if request.model.trim().is_empty() {
+        return Err(ApiError::Invalid("model must not be empty".to_owned()));
+    }
+
+    // Validate the input shape before touching the runtime: a malformed request
+    // must not cost a model load.
+    let model = request.model.clone();
+    let inputs = request.into_inputs()?;
+    if inputs.is_empty() {
+        return Err(ApiError::Invalid("input must not be empty".to_owned()));
+    }
+
+    let outcome = state.backend.embeddings(&model, inputs.clone()).await?;
+
+    let data: Vec<EmbeddingData> = outcome
+        .vectors
+        .into_iter()
+        .enumerate()
+        .map(|(index, embedding)| EmbeddingData {
+            object: "embedding".to_owned(),
+            index: index as u32,
+            embedding,
+        })
+        .collect();
+
+    Ok(Json(EmbeddingsResponse {
+        object: "list".to_owned(),
+        data,
+        model,
+        usage: Usage {
+            // The runtime reports no prompt tokens for embedding input; 0 is
+            // honest, a guess would not be.
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            total_tokens: 0,
+        },
+    }))
 }
 
 fn streaming_response(
