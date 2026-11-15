@@ -98,6 +98,7 @@ gguf-engine-runtime-manager = { path = "crates/runtime-manager" }
 gguf-engine-runtime-llama-cpp = { path = "crates/runtime-llama-cpp" }
 gguf-engine-gpu-manager = { path = "crates/gpu-manager" }
 gguf-engine-memory-manager = { path = "crates/memory-manager" }
+gguf-engine-api-server = { path = "crates/api-server" }
 
 # --- platform-specific dependencies ---
 # Named pipe security descriptors (spec §3.2, §9.3). Declared here so member

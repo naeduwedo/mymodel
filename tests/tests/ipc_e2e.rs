@@ -1,5 +1,10 @@
 //! End-to-end test of the real daemon binary over the real platform transport.
 //!
+//! **Build the binaries first.** These tests spawn `target/<profile>/gguf-core`,
+//! and `cargo test` does not refresh that file: it builds test harnesses into
+//! `deps/` instead. Run `cargo build --workspace` before `cargo test`, or a stale
+//! binary will be tested and the result will depend on build order.
+//!
 //! Nothing here is mocked: the test starts `gguf-core`, connects over the named
 //! pipe (Windows) or Unix socket (Linux/macOS) using the same client the CLI and
 //! the native UIs use, reads health, streams events, and then shuts the core
@@ -123,15 +128,30 @@ fn daemon_serves_health_over_the_platform_transport() {
             database.detail
         );
 
-        // llama.cpp is implemented (Task 6); a still-planned component must
-        // instead appear unhealthy with a reason.
-        let planned = health
+        // One honest gap remains: image generation, video, audio and music have
+        // no runtime adapter. It must be listed as unhealthy *with a reason*,
+        // and nothing else may be.
+        let unimplemented: Vec<&str> = health
             .components
             .iter()
-            .find(|c| c.name == "http_api")
-            .expect("planned components are listed, not hidden");
-        assert!(!planned.healthy);
-        assert!(!planned.detail.is_empty(), "a gap must have a reason");
+            .filter(|c| !c.healthy && c.name != "ipc")
+            .map(|c| c.name.as_str())
+            .collect();
+        assert_eq!(
+            unimplemented,
+            vec!["multimodal_other"],
+            "only the modalities without a runtime may be unimplemented"
+        );
+
+        let gap = health
+            .components
+            .iter()
+            .find(|c| c.name == "multimodal_other")
+            .expect("the gap is listed, not hidden");
+        assert!(
+            !gap.detail.is_empty(),
+            "an unimplemented capability must explain itself"
+        );
     });
 }
 

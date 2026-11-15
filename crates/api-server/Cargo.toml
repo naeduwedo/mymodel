@@ -6,5 +6,23 @@ rust-version.workspace = true
 license.workspace = true
 description = "Local REST / OpenAI-compatible API gateway"
 
+[dependencies]
+gguf-engine-ipc = { workspace = true }
+gguf-engine-protocol = { workspace = true }
+
+axum = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+async-stream = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+reqwest = { workspace = true }
+
 [lints]
 workspace = true

@@ -265,3 +265,46 @@ Two failure modes are handled because they were found by tests, not by reading:
   holding VRAM until the core restarted, so the unload lives in a `Drop` guard;
 - a server-streaming RPC can report its failure as the stream's first item rather
   than at call time, so the test accepts either and still refuses an empty answer.
+
+## Follow-up after Task 9 - OpenAI-compatible gateway: **done**
+
+| Deliverable | State | Evidence |
+| --- | --- | --- |
+| `GET /health` | done | `{"status":"ok"}` |
+| `GET /v1/models` | done | reads the real registry: `ggml-org/models` |
+| `POST /v1/chat/completions` | done | non-streaming and SSE streaming; real tokens |
+| Security defaults | done | loopback-only by default; non-loopback bind without a token is refused before a socket opens |
+| CORS | opt-in only | no headers are sent unless the operator asks |
+| Tests | done | 15 tests, several over a real loopback socket |
+
+```text
+$ curl 127.0.0.1:18888/v1/models
+{"object":"list","data":[{"id":"ggml-org/models","object":"model","owned_by":"llama"}]}
+
+$ curl 127.0.0.1:18888/v1/chat/completions -d '{"model":"ggml-org/models",...}'
+{"object":"chat.completion","choices":[{"message":{"role":"assistant",
+  "content":" Anna, Anna, I'm "},"finish_reason":"stop"}],
+ "usage":{"prompt_tokens":0,"completion_tokens":16,"total_tokens":16}}
+
+unknown model -> 404 {"error":{"code":"model_not_found"}}
+```
+
+The gateway is a protocol translator over `InferenceService`, not a second
+inference path (ADR-020). `prompt_tokens` is 0 because the runtime does not
+count them; a guess would look authoritative while being wrong.
+
+## Follow-up - Windows shell chat: **done**
+
+| Deliverable | State | Evidence |
+| --- | --- | --- |
+| Chat pane | done | model id, prompt, transcript, Send/Stop |
+| Streaming render | done | tokens appear as they arrive; Stop keeps the partial answer |
+| Toolkit-free logic | done | `ChatSession` and `ChatTranscript` are unit tested without a window |
+| C# tests | done | 33 passing (was 20) |
+
+Verified with UI Automation against a live core: the window exposes the Chat
+navigation item and renders real values (`2 device(s), 36.0 GiB VRAM`,
+`Intel(R) Core(TM) i9-14900KF`, `24 physical / 32 logical cores`).
+
+`crates/inference` was deleted: it was a placeholder, and the real implementation
+lives in `crates/ipc/src/inference.rs`.

@@ -29,6 +29,15 @@
     <SelfContained>true</SelfContained>
     <!-- Trimming/AOT are off: WinUI 3 does not fully support them yet. -->
     <PublishTrimmed>false</PublishTrimmed>
+    <!--
+      Required by Microsoft's WinRT AOT source generator, which emits unsafe
+      interop for generic collection projections (WinRTGenericInstantiation.g.cs).
+      This is generated code, not ours: no hand-written file in this project uses
+      unsafe, and the toolkit-free Core library compiles without this flag.
+      The alternative - avoiding generic ItemsSource bindings - would mean
+      giving up DataTemplates, which is a worse trade.
+    -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Generated gRPC stubs land here. An explicit output directory plus an
          explicit Compile include is used instead of relying on Grpc.Tools to

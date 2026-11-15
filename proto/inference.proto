@@ -1,8 +1,6 @@
 syntax = "proto3";
 package gguf.v1;
 
-import "common.proto";
-
 // Inference tasks and streaming (spec §9, Task 6).
 
 enum TaskStatus {

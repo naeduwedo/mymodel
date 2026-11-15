@@ -111,8 +111,11 @@ fn planned_crates_declare_their_status() {
         "runtime-llama-cpp",
         "gpu-manager",
         "memory-manager",
+        "api-server",
     ];
-    let planned = ["inference", "api-server"];
+    // Every crate is implemented; this list is intentionally empty and the loop
+    // below is a no-op kept so the rule stays expressed.
+    let planned: [&str; 0] = [];
 
     for name in implemented {
         let text = read_lib(&root, name);

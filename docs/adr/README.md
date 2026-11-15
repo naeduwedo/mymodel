@@ -25,6 +25,7 @@ while implementing Task 1 and are still binding.
 | [017](ADR-017-per-device-budgets-and-leases.md) | Per-device budgets and expiring leases, never a summed pool | Accepted |
 | [018](ADR-018-modality-status-not-flags.md) | Modalities are declared with a status and a reason, never a flag | Accepted |
 | [019](ADR-019-packaging-ships-binaries-only.md) | Packaging ships binaries and recipes, never user data or runtimes | Accepted |
+| [020](ADR-020-openai-gateway-relays-the-core-stream.md) | The OpenAI gateway relays the core's stream instead of loading models | Accepted |
 
 ## Writing a new ADR
 

@@ -27,6 +27,7 @@
             SelectionChanged="OnNavigationChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Overview" Tag="overview" Icon="Home" IsSelected="True" />
+                <NavigationViewItem Content="Chat" Tag="chat" Icon="Message" />
                 <NavigationViewItem Content="Settings" Tag="settings" Icon="Setting" />
             </NavigationView.MenuItems>
 
@@ -92,6 +93,82 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel x:Name="ChatPanel" Spacing="12" Visibility="Collapsed">
+                        <TextBlock Text="Chat" Style="{StaticResource TitleTextBlockStyle}" />
+
+                        <!-- The model is chosen by id from the registry; a free-text
+                             box would let a typo become a confusing core error. -->
+                        <Grid ColumnDefinitions="Auto,*,Auto,120" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0" Text="Model" VerticalAlignment="Center" />
+                            <TextBox
+                                x:Name="ModelBox"
+                                Grid.Column="1"
+                                PlaceholderText="repository id, e.g. ggml-org/models"
+                                TextChanged="OnModelChanged" />
+                            <TextBlock Grid.Column="2" Text="Max tokens" VerticalAlignment="Center" />
+                            <NumberBox
+                                x:Name="MaxTokensBox"
+                                Grid.Column="3"
+                                Value="256"
+                                Minimum="1"
+                                Maximum="8192"
+                                SpinButtonPlacementMode="Compact" />
+                        </Grid>
+
+                        <InfoBar
+                            x:Name="ChatBar"
+                            Severity="Informational"
+                            IsOpen="False"
+                            IsClosable="False" />
+
+                        <!-- The transcript: user and assistant turns, in order. -->
+                        <Border
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16"
+                            MinHeight="240">
+                            <ScrollViewer x:Name="TranscriptScroller" VerticalScrollBarVisibility="Auto" MaxHeight="420">
+                                <ItemsControl x:Name="TranscriptList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Spacing="2" Margin="0,0,0,12">
+                                                <TextBlock
+                                                    Text="{Binding Speaker}"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Opacity="0.7" />
+                                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBox
+                                x:Name="PromptBox"
+                                Grid.Column="0"
+                                PlaceholderText="Ask something..."
+                                AcceptsReturn="False"
+                                KeyDown="OnPromptKeyDown" />
+                            <Button
+                                x:Name="SendButton"
+                                Grid.Column="1"
+                                Content="Send"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="OnSendClicked" />
+                            <Button x:Name="StopButton" Grid.Column="2" Content="Stop" Click="OnStopClicked" IsEnabled="False" />
+                        </Grid>
+
+                        <TextBlock
+                            x:Name="ChatStatus"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Opacity="0.7"
+                            Text="Choose a model that is already downloaded." />
                     </StackPanel>
 
                     <StackPanel x:Name="SettingsPanel" Spacing="16" Visibility="Collapsed">

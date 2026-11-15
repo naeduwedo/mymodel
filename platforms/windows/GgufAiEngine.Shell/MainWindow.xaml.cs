@@ -1,12 +1,14 @@
 // Copyright (c) GGUF AI Engine contributors. Apache-2.0.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Gguf.V1;
 using GgufAiEngine.Shell.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 
 namespace GgufAiEngine.Shell;
 
@@ -28,6 +30,11 @@ public sealed partial class MainWindow : Window
     private readonly CancellationTokenSource _lifetime = new();
     private CoreClient? _client;
     private UiSnapshot? _lastSnapshot;
+
+    private readonly ChatTranscript _transcript = new();
+    private readonly List<ChatTurn> _turns = new();
+    private CancellationTokenSource? _chatCancellation;
+    private ChatTurn? _streamingTurn;
 
     public MainWindow()
     {
@@ -142,9 +149,145 @@ public sealed partial class MainWindow : Window
     private void OnNavigationChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         var tag = (args.SelectedItemContainer as NavigationViewItem)?.Tag as string;
+        var showChat = string.Equals(tag, "chat", StringComparison.Ordinal);
         var showSettings = string.Equals(tag, "settings", StringComparison.Ordinal);
-        OverviewPanel.Visibility = showSettings ? Visibility.Collapsed : Visibility.Visible;
+        var showOverview = !showChat && !showSettings;
+
+        OverviewPanel.Visibility = showOverview ? Visibility.Visible : Visibility.Collapsed;
+        ChatPanel.Visibility = showChat ? Visibility.Visible : Visibility.Collapsed;
         SettingsPanel.Visibility = showSettings ? Visibility.Visible : Visibility.Collapsed;
+
+        if (showChat)
+        {
+            PromptBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    // ---------------------------------------------------------------- chat ----
+
+    private void OnModelChanged(object sender, TextChangedEventArgs e)
+    {
+        SendButton.IsEnabled = !string.IsNullOrWhiteSpace(ModelBox.Text);
+    }
+
+    private void OnPromptKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            OnSendClicked(sender, new RoutedEventArgs());
+        }
+    }
+
+    private void OnStopClicked(object sender, RoutedEventArgs e)
+    {
+        // Cancelling keeps the partial answer: the user watched those tokens
+        // arrive and losing them would be a surprise.
+        _chatCancellation?.Cancel();
+    }
+
+    private async void OnSendClicked(object sender, RoutedEventArgs e)
+    {
+        if (_client is null)
+        {
+            ShowChatMessage(InfoBarSeverity.Warning, "Not connected", "Start the core first.");
+            return;
+        }
+
+        ChatRequest request;
+        try
+        {
+            request = _transcript.BuildRequest(
+                ModelBox.Text,
+                PromptBox.Text,
+                (uint)MaxTokensBox.Value,
+                0.7f);
+        }
+        catch (ArgumentException ex)
+        {
+            ShowChatMessage(InfoBarSeverity.Warning, "Nothing to send", ex.Message);
+            return;
+        }
+
+        PromptBox.Text = string.Empty;
+        SetChatBusy(true);
+        ChatBar.IsOpen = false;
+
+        _transcript.AddUser(request.Messages[request.Messages.Count - 1].Content);
+        var userTurn = new ChatTurn("You", _transcript.Messages[_transcript.Messages.Count - 1].Content);
+        AddTurn(userTurn);
+
+        var answer = new ChatTurn("Assistant", string.Empty);
+        _streamingTurn = answer;
+        AddTurn(answer);
+
+        _chatCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        var session = new ChatSession(_client.ChatAsync(request, _chatCancellation.Token));
+
+        try
+        {
+            await foreach (var delta in session.RunAsync(_chatCancellation.Token))
+            {
+                answer.Text += delta;
+                RefreshTurns();
+                TranscriptScroller.ChangeView(null, TranscriptScroller.ScrollableHeight, null);
+            }
+
+            _transcript.AddAssistant(session.Answer);
+            ChatStatus.Text = session.Completed
+                ? $"{session.Chunks} tokens in {session.FinalProgress?.ElapsedMs ?? 0} ms"
+                : "The answer ended early.";
+        }
+        catch (OperationCanceledException)
+        {
+            _transcript.AddAssistant(session.Answer);
+            ChatStatus.Text = $"Stopped after {session.Chunks} tokens.";
+        }
+        catch (Exception ex)
+        {
+            // Keep whatever arrived, and say what went wrong. The transcript keeps
+            // the partial answer so the next turn still has context.
+            _transcript.AddAssistant(session.Answer);
+            ShowChatMessage(InfoBarSeverity.Error, "Chat failed", ex.Message);
+            ChatStatus.Text = $"Failed after {session.Chunks} tokens.";
+        }
+        finally
+        {
+            _streamingTurn = null;
+            _chatCancellation?.Dispose();
+            _chatCancellation = null;
+            SetChatBusy(false);
+        }
+    }
+
+    private void SetChatBusy(bool busy)
+    {
+        SendButton.IsEnabled = !busy && !string.IsNullOrWhiteSpace(ModelBox.Text);
+        StopButton.IsEnabled = busy;
+        PromptBox.IsEnabled = !busy;
+    }
+
+    private void ShowChatMessage(InfoBarSeverity severity, string title, string message)
+    {
+        ChatBar.Severity = severity;
+        ChatBar.Title = title;
+        ChatBar.Message = message;
+        ChatBar.IsOpen = true;
+    }
+
+    private void AddTurn(ChatTurn turn)
+    {
+        _turns.Add(turn);
+        RefreshTurns();
+    }
+
+    private void RefreshTurns()
+    {
+        // Rebind so the streaming turn re-renders as its text grows. The list is
+        // small (a conversation), so replacing the source is cheaper than
+        // per-item change notification.
+        TranscriptList.ItemsSource = null;
+        TranscriptList.ItemsSource = _turns;
     }
 
     /// <summary>Stop polling and release the channel when the window closes.</summary>
@@ -153,4 +296,26 @@ public sealed partial class MainWindow : Window
         _lifetime.Cancel();
         _client?.Dispose();
     }
+}
+/// <summary>One rendered turn in the chat pane.</summary>
+/// <remarks>
+/// Plain mutable properties: the pane rebinds its item source as tokens arrive,
+/// which re-reads them. A per-item change notification would be more efficient
+/// for very long conversations, but a conversation is small and rebinding keeps
+/// the streaming path obvious.
+/// </remarks>
+public sealed class ChatTurn
+{
+    /// <summary>Create a turn.</summary>
+    public ChatTurn(string speaker, string text)
+    {
+        Speaker = speaker;
+        Text = text;
+    }
+
+    /// <summary>Who said it ("You" or "Assistant").</summary>
+    public string Speaker { get; }
+
+    /// <summary>The text so far.</summary>
+    public string Text { get; set; }
 }

@@ -59,6 +59,18 @@ impl CoreClient {
         Ok(reply.into_inner())
     }
 
+    /// Registered models.
+    pub async fn list_models(&self) -> Result<pb::ListModelsResponse, IpcError> {
+        let mut client = pb::model_service_client::ModelServiceClient::new(self.channel.clone());
+        let reply = client
+            .list_models(pb::ListModelsRequest {
+                limit: 500,
+                offset: 0,
+            })
+            .await?;
+        Ok(reply.into_inner())
+    }
+
     /// Run a chat completion, streaming tokens as they are generated.
     ///
     /// The stream ends with a `done` chunk carrying the token count and elapsed

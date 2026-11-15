@@ -1,5 +1,10 @@
 //! End-to-end chat over the real IPC transport (spec §9).
 //!
+//! **Build the binaries first.** These tests spawn `target/<profile>/gguf-core`,
+//! and `cargo test` does not refresh that file: it builds test harnesses into
+//! `deps/` instead. Run `cargo build --workspace` before `cargo test`, or a stale
+//! binary will be tested and the result will depend on build order.
+//!
 //! These need a running core, an installed llama.cpp and a downloaded model, so
 //! they are `#[ignore]`d and opt-in. They never silently skip: without the
 //! environment they fail loudly rather than pretending to pass.

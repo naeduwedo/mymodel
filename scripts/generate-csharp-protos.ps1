@@ -53,7 +53,7 @@ try {
     & $tool.Protoc "--proto_path=$protoDir" "--csharp_out=$temp" (Join-Path $protoDir 'common.proto')
     if ($LASTEXITCODE -ne 0) { throw 'protoc failed for common.proto' }
 
-    foreach ($name in @('health', 'ui')) {
+    foreach ($name in @('health', 'ui', 'inference')) {
         & $tool.Protoc "--proto_path=$protoDir" "--csharp_out=$temp" "--grpc_out=$temp" `
             "--plugin=protoc-gen-grpc=$($tool.Plugin)" '--grpc_opt=no_server' (Join-Path $protoDir "$name.proto")
         if ($LASTEXITCODE -ne 0) { throw "protoc failed for $name.proto" }

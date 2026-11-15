@@ -407,9 +407,18 @@ impl AuthenticationMode {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApiConfig {
+    /// Whether to start the gateway at all.
+    ///
+    /// On by default because it is loopback-only: a local API that a local tool
+    /// can use is the point. Turning it off is for users who want no listener.
+    #[serde(default = "ApiConfig::default_enabled")]
+    pub enabled: bool,
     /// Bind address. Must stay loopback unless the user opts in.
     #[serde(default = "ApiConfig::default_bind")]
     pub bind: String,
+    /// Bearer token. Required by the gateway for any non-loopback bind.
+    #[serde(default)]
+    pub token: Option<String>,
     /// Authentication mode.
     #[serde(default = "ApiConfig::default_authentication")]
     pub authentication: AuthenticationMode,
@@ -419,6 +428,9 @@ pub struct ApiConfig {
 }
 
 impl ApiConfig {
+    fn default_enabled() -> bool {
+        true
+    }
     fn default_bind() -> String {
         "127.0.0.1".to_owned()
     }
@@ -430,7 +442,9 @@ impl ApiConfig {
 impl Default for ApiConfig {
     fn default() -> Self {
         Self {
+            enabled: Self::default_enabled(),
             bind: Self::default_bind(),
+            token: None,
             authentication: Self::default_authentication(),
             port: None,
         }

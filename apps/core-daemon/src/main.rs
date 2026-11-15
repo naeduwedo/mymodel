@@ -258,6 +258,40 @@ async fn run_daemon(config: &Config, paths: &AppPaths) -> ExitCode {
     };
     tracing::info!(endpoint = server.endpoint(), "IPC listening");
 
+    // --- OpenAI-compatible gateway -------------------------------------------
+    //
+    // Started after IPC so it can relay through the same transport the UI uses.
+    // A gateway failure is logged and survived: the core is still usable through
+    // the CLI and the shells, and refusing to start over a busy port would be a
+    // worse outcome than reporting it.
+    let gateway = if config.api.enabled {
+        let api_config = gguf_engine_api_server::ApiConfig {
+            bind: format!("{}:{}", config.api.bind, config.effective_api_port())
+                .parse()
+                .unwrap_or_else(|_| {
+                    std::net::SocketAddr::from(([127, 0, 0, 1], config.effective_api_port()))
+                }),
+            token: config.api.token.clone(),
+            allow_browser_origins: false,
+        };
+
+        let backend = std::sync::Arc::new(gguf_engine_api_server::IpcBackend::new(paths.root()));
+        match gguf_engine_api_server::serve(api_config, backend).await {
+            Ok(gateway) => {
+                tracing::info!(address = %gateway.address(), "API gateway listening");
+                Some(gateway)
+            }
+            Err(err) => {
+                tracing::warn!(error = %err, "the API gateway did not start");
+                eprintln!("gguf-core: API gateway not started: {err}");
+                None
+            }
+        }
+    } else {
+        tracing::info!("the API gateway is disabled in the configuration");
+        None
+    };
+
     if let Err(err) = lifecycle.transition(CoreState::Ready) {
         tracing::error!(error = %err, "failed to become ready");
         let _ = server.shutdown().await;
@@ -299,6 +333,13 @@ async fn run_daemon(config: &Config, paths: &AppPaths) -> ExitCode {
     }
 
     // --- shutdown -----------------------------------------------------------
+    // Stop the gateway before the IPC it depends on, so an in-flight request
+    // gets a connection error rather than a half-closed pipe.
+    if let Some(gateway) = gateway {
+        tracing::info!(address = %gateway.address(), "stopping the API gateway");
+        gateway.stop();
+    }
+
     lifecycle_handle.set(CoreState::ShuttingDown);
     if let Err(err) = lifecycle.transition(CoreState::ShuttingDown) {
         tracing::error!(error = %err, "failed to enter the shutting-down state");

@@ -22,6 +22,7 @@ gguf-engine-protocol = { workspace = true }
 gguf-engine-telemetry = { workspace = true }
 gguf-engine-database = { workspace = true }
 gguf-engine-ipc = { workspace = true }
+gguf-engine-api-server = { workspace = true }
 uuid = { workspace = true }
 
 clap = { workspace = true }

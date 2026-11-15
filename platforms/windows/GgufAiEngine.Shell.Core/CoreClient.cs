@@ -1,6 +1,7 @@
 // Copyright (c) GGUF AI Engine contributors. Apache-2.0.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading;
@@ -142,6 +143,25 @@ public sealed class CoreClient : IDisposable
         var health = new HealthService.HealthServiceClient(_channel);
         return await health.GetHealthAsync(new HealthRequest(), cancellationToken: cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Stream a chat completion.
+    /// </summary>
+    /// <remarks>
+    /// Returned as <see cref="IAsyncEnumerable{T}"/> so the caller can render each
+    /// token as it arrives. Cancelling the enumeration tells the core to stop; the
+    /// core unloads the model when the stream ends, including on a disconnect, so
+    /// abandoning the stream does not leak a worker process.
+    /// </remarks>
+    public IAsyncEnumerable<ChatChunk> ChatAsync(
+        ChatRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var inference = new InferenceService.InferenceServiceClient(_channel);
+        return inference.Chat(request, cancellationToken: cancellationToken)
+            .ResponseStream
+            .ReadAllAsync(cancellationToken);
     }
 
     /// <inheritdoc />

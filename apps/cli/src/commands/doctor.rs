@@ -367,6 +367,7 @@ mod tests {
         assert!(supported.contains(&"multi_gpu_scheduling".to_owned()));
         assert!(supported.contains(&"memory_paging".to_owned()));
         assert!(supported.contains(&"inference".to_owned()));
+        assert!(supported.contains(&"http_api".to_owned()));
         assert!(supported.contains(&"ipc".to_owned()));
     }
 

@@ -110,11 +110,9 @@ pub fn features() -> Vec<Feature> {
         // Task 9 follow-up: InferenceService streams chat over the local transport,
         // which is the path the UI shells use.
         Feature::new("inference", FeatureStatus::Supported, None),
-        Feature::new(
-            "http_api",
-            FeatureStatus::Planned,
-            Some("no HTTP listener is implemented yet".to_owned()),
-        ),
+        // Follow-up after Task 9: the OpenAI-compatible gateway is real and
+        // loopback-only by default.
+        Feature::new("http_api", FeatureStatus::Supported, None),
     ]
 }
 
@@ -186,7 +184,8 @@ mod tests {
                 "multi_gpu_scheduling",
                 "memory_paging",
                 "vision",
-                "inference"
+                "inference",
+                "http_api"
             ],
             "advertising a capability before it exists violates spec rule 4"
         );
