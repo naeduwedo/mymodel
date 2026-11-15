@@ -23,12 +23,17 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use tokio_stream::StreamExt;
 
+use axum::extract::Multipart;
+use axum::http::header as http_header;
+
 use crate::backend::Backend;
 use crate::config::ApiConfig;
 use crate::error::ApiError;
+use crate::media::MediaBackend;
 use crate::openai::{
-    ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, Choice,
-    ChunkChoice, Delta, EmbeddingData, EmbeddingsRequest, EmbeddingsResponse, ModelList, Usage,
+    AudioSpeechRequest, ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse,
+    ChatMessage, Choice, ChunkChoice, Delta, EmbeddingData, EmbeddingsRequest, EmbeddingsResponse,
+    ImageGenerationRequest, ModelList, TranscriptionResponse, Usage,
 };
 
 /// Shared state for every handler.
@@ -38,6 +43,8 @@ pub struct AppState {
     pub config: Arc<ApiConfig>,
     /// The engine.
     pub backend: Arc<dyn Backend>,
+    /// The media runtimes behind the image and audio endpoints.
+    pub media: Arc<dyn MediaBackend>,
 }
 
 impl std::fmt::Debug for AppState {
@@ -58,6 +65,9 @@ pub fn router(state: AppState) -> Router {
         .route("/v1/models", get(list_models))
         .route("/v1/chat/completions", post(chat_completions))
         .route("/v1/embeddings", post(embeddings))
+        .route("/v1/images/generations", post(images_generations))
+        .route("/v1/audio/speech", post(audio_speech))
+        .route("/v1/audio/transcriptions", post(audio_transcriptions))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             authorise_and_set_headers,
@@ -231,6 +241,109 @@ async fn embeddings(
             total_tokens: 0,
         },
     }))
+}
+
+async fn images_generations(
+    State(state): State<AppState>,
+    body: Result<Json<ImageGenerationRequest>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<crate::openai::ImageGenerationResponse>, ApiError> {
+    let Json(request) = body?;
+
+    if request.prompt.trim().is_empty() {
+        return Err(ApiError::Invalid("prompt must not be empty".to_owned()));
+    }
+    // One image per request: the endpoint accepts `n`, but the runtime is asked
+    // for one and repeating it would multiply a slow operation silently.
+    if request.n.is_some_and(|n| n != 1) {
+        return Err(ApiError::Invalid(
+            "n > 1 is not supported by this gateway; send separate requests".to_owned(),
+        ));
+    }
+
+    let model = request
+        .model
+        .clone()
+        .unwrap_or_else(|| "diffusion".to_owned());
+    let bytes = state.media.image(&request).await?;
+
+    Ok(Json(crate::media::image_response(bytes, model)))
+}
+
+async fn audio_speech(
+    State(state): State<AppState>,
+    body: Result<Json<AudioSpeechRequest>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response, ApiError> {
+    let Json(request) = body?;
+
+    if request.input.trim().is_empty() {
+        return Err(ApiError::Invalid("input must not be empty".to_owned()));
+    }
+    // Only wav is produced. Claiming mp3 by re-encoding would need another
+    // dependency and would lie about the bytes if it failed halfway.
+    if let Some(format) = &request.response_format
+        && !format.eq_ignore_ascii_case("wav")
+        && !format.eq_ignore_ascii_case("pcm")
+    {
+        return Err(ApiError::Invalid(format!(
+            "response_format '{format}' is not supported; use wav"
+        )));
+    }
+
+    let bytes = state.media.speech(&request).await?;
+
+    let mut response = (StatusCode::OK, bytes).into_response();
+    response.headers_mut().insert(
+        http_header::CONTENT_TYPE,
+        HeaderValue::from_static("audio/wav"),
+    );
+    Ok(response)
+}
+
+async fn audio_transcriptions(
+    State(state): State<AppState>,
+    // Multipart is what OpenAI clients send, so it is what is accepted.
+    mut multipart: Multipart,
+) -> Result<Json<TranscriptionResponse>, ApiError> {
+    let mut audio: Option<(Vec<u8>, String)> = None;
+    let mut language: Option<String> = None;
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|err| ApiError::Invalid(format!("reading the upload: {err}")))?
+    {
+        match field.name() {
+            Some("file") => {
+                let filename = field.file_name().unwrap_or("audio.wav").to_owned();
+                let bytes = field
+                    .bytes()
+                    .await
+                    .map_err(|err| ApiError::Invalid(format!("reading the file: {err}")))?;
+                if bytes.is_empty() {
+                    return Err(ApiError::Invalid("the uploaded file is empty".to_owned()));
+                }
+                audio = Some((bytes.to_vec(), filename));
+            }
+            Some("language") => {
+                language = Some(
+                    field
+                        .text()
+                        .await
+                        .map_err(|err| ApiError::Invalid(format!("reading language: {err}")))?,
+                );
+            }
+            _ => {}
+        }
+    }
+
+    let Some((bytes, filename)) = audio else {
+        return Err(ApiError::Invalid(
+            "a 'file' part with the audio is required".to_owned(),
+        ));
+    };
+
+    let text = state.media.transcribe(bytes, &filename, language).await?;
+    Ok(Json(TranscriptionResponse { text }))
 }
 
 fn streaming_response(

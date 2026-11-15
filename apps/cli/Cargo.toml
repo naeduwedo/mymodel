@@ -25,6 +25,7 @@ gguf-engine-gguf = { workspace = true }
 gguf-engine-model-hub = { workspace = true }
 gguf-engine-gpu-manager = { workspace = true }
 gguf-engine-memory-manager = { workspace = true }
+gguf-engine-multimodal = { workspace = true }
 gguf-engine-hardware = { workspace = true }
 gguf-engine-runtime-llama-cpp = { workspace = true }
 gguf-engine-runtime-manager = { workspace = true }

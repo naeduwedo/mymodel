@@ -4,6 +4,7 @@
 //! listed, not hidden: a user asking "can it do audio?" deserves an answer.
 
 use anyhow::Result;
+use gguf_engine_multimodal::{ModalityState, modality_report};
 use gguf_engine_runtime_manager::{ModalityStatus, modalities};
 use serde::Serialize;
 
@@ -17,7 +18,7 @@ struct ModalityRow {
 
 /// Print the modality matrix.
 pub fn modalities_cmd(json: bool) -> Result<bool> {
-    let rows: Vec<ModalityRow> = modalities()
+    let mut rows: Vec<ModalityRow> = modalities()
         .into_iter()
         .map(|entry| ModalityRow {
             modality: entry.modality.as_str().to_owned(),
@@ -26,6 +27,24 @@ pub fn modalities_cmd(json: bool) -> Result<bool> {
             detail: entry.detail,
         })
         .collect();
+
+    // The non-LLM runtimes are probed here rather than assumed: an image model
+    // is offered because a diffusion runtime was found on this machine.
+    for report in modality_report() {
+        let status = match report.state {
+            ModalityState::Available => ModalityStatus::Supported,
+            ModalityState::NotInstalled | ModalityState::NoRuntime => ModalityStatus::Unsupported,
+        };
+        rows.push(ModalityRow {
+            modality: report.modality,
+            status: status.as_str().to_owned(),
+            runtime: report.runtime,
+            detail: report.detail,
+        });
+    }
+
+    // Stable order, so two runs on the same machine print the same table.
+    rows.sort_by(|a, b| a.modality.cmp(&b.modality));
 
     if json {
         println!("{}", serde_json::to_string_pretty(&rows)?);

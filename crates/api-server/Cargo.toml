@@ -9,6 +9,9 @@ description = "Local REST / OpenAI-compatible API gateway"
 [dependencies]
 gguf-engine-ipc = { workspace = true }
 gguf-engine-protocol = { workspace = true }
+gguf-engine-config = { workspace = true }
+gguf-engine-multimodal = { workspace = true }
+base64 = { workspace = true }
 
 axum = { workspace = true }
 tokio = { workspace = true }

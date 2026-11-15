@@ -8,6 +8,7 @@ use tracing::{info, warn};
 
 use crate::backend::Backend;
 use crate::config::{ApiConfig, ConfigError, Exposure};
+use crate::media::MediaBackend;
 use crate::routes::{AppState, router};
 
 /// A running gateway.
@@ -34,7 +35,11 @@ impl ApiServer {
 /// The configuration is validated **before** a socket is opened: a rejected
 /// configuration must not leave a listener running that a later request could
 /// reach.
-pub async fn serve(config: ApiConfig, backend: Arc<dyn Backend>) -> Result<ApiServer, ConfigError> {
+pub async fn serve(
+    config: ApiConfig,
+    backend: Arc<dyn Backend>,
+    media: Arc<dyn MediaBackend>,
+) -> Result<ApiServer, ConfigError> {
     config.validate()?;
 
     let listener = TcpListener::bind(config.bind)
@@ -53,6 +58,7 @@ pub async fn serve(config: ApiConfig, backend: Arc<dyn Backend>) -> Result<ApiSe
     let state = AppState {
         config: Arc::new(config),
         backend,
+        media,
     };
 
     let app = router(state);

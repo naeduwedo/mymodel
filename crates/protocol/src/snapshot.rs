@@ -97,7 +97,11 @@ pub fn feature_label(id: &str) -> &str {
         "memory_paging" => "Memory paging",
         "vision" => "Vision (image in)",
         "inference" => "Chat (streaming)",
-        "multimodal_other" => "Image / video / audio / music",
+        "image_generation" => "Image generation",
+        "video_generation" => "Video generation",
+        "speech_recognition" => "Speech recognition",
+        "speech_synthesis" => "Speech synthesis",
+        "music_generation" => "Music generation",
         "http_api" => "HTTP / OpenAI API",
         other => other,
     }

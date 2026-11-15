@@ -159,8 +159,16 @@ async fn start(
     config: ApiConfig,
     backend: Arc<dyn Backend>,
 ) -> (SocketAddr, gguf_engine_api_server::ApiServer) {
-    let server = serve(config, backend).await.expect("the gateway starts");
+    let server = serve(config, backend, no_media())
+        .await
+        .expect("the gateway starts");
     (server.address(), server)
+}
+
+/// A media backend with nothing configured, so the media endpoints report the
+/// capability as unavailable instead of being absent from the router.
+fn no_media() -> Arc<dyn gguf_engine_api_server::MediaBackend> {
+    Arc::new(gguf_engine_api_server::LocalMedia::default())
 }
 
 fn loopback_config() -> ApiConfig {
@@ -483,5 +491,105 @@ async fn an_unknown_model_for_embeddings_is_a_404() {
 
     assert_eq!(response.status(), reqwest::StatusCode::NOT_FOUND);
 
+    server.stop();
+}
+#[tokio::test]
+async fn an_image_request_without_a_runtime_is_a_503_with_a_reason() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/images/generations"))
+        .json(&serde_json::json!({ "prompt": "a cat" }))
+        .send()
+        .await
+        .unwrap();
+
+    // 503, not 500: the server is fine, the capability is missing.
+    assert_eq!(response.status(), reqwest::StatusCode::SERVICE_UNAVAILABLE);
+    let body: serde_json::Value = response.json().await.unwrap();
+    assert_eq!(body["error"]["type"], "capability_not_available");
+    assert!(
+        !body["error"]["message"].as_str().unwrap().is_empty(),
+        "a missing capability must say why: {body}"
+    );
+
+    server.stop();
+}
+
+#[tokio::test]
+async fn an_empty_image_prompt_is_a_400() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/images/generations"))
+        .json(&serde_json::json!({ "prompt": "   " }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+    server.stop();
+}
+
+#[tokio::test]
+async fn asking_for_several_images_is_refused_rather_than_silently_reduced() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/images/generations"))
+        .json(&serde_json::json!({ "prompt": "a cat", "n": 4 }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+    let body: serde_json::Value = response.json().await.unwrap();
+    assert!(body["error"]["message"].as_str().unwrap().contains("n > 1"));
+    server.stop();
+}
+
+#[tokio::test]
+async fn speech_without_a_runtime_is_a_503() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/audio/speech"))
+        .json(&serde_json::json!({ "input": "hello" }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::SERVICE_UNAVAILABLE);
+    server.stop();
+}
+
+#[tokio::test]
+async fn an_unsupported_speech_format_is_refused_rather_than_mislabelled() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/audio/speech"))
+        .json(&serde_json::json!({ "input": "hello", "response_format": "mp3" }))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+    server.stop();
+}
+
+#[tokio::test]
+async fn a_transcription_without_a_file_is_a_400() {
+    let (address, server) = start(loopback_config(), fake()).await;
+
+    let form = reqwest::multipart::Form::new().text("model", "whisper");
+    let response = reqwest::Client::new()
+        .post(format!("http://{address}/v1/audio/transcriptions"))
+        .multipart(form)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
     server.stop();
 }

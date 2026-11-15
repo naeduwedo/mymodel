@@ -28,6 +28,10 @@ pub enum ApiError {
     /// The core reported a failure.
     #[error("{0}")]
     Backend(String),
+
+    /// No runtime provides this modality on this machine.
+    #[error("this capability is not available: {0}")]
+    NotAvailable(String),
 }
 
 impl ApiError {
@@ -39,6 +43,9 @@ impl ApiError {
             Self::ModelNotFound(_) => StatusCode::NOT_FOUND,
             Self::CoreUnavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::Backend(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            // 503, not 500: the server is fine, the capability is missing, and a
+            // client should read this as "install or configure a runtime".
+            Self::NotAvailable(_) => StatusCode::SERVICE_UNAVAILABLE,
         }
     }
 
@@ -50,6 +57,7 @@ impl ApiError {
             Self::ModelNotFound(_) => "invalid_request_error",
             Self::CoreUnavailable(_) => "api_error",
             Self::Backend(_) => "api_error",
+            Self::NotAvailable(_) => "capability_not_available",
         }
     }
 

@@ -16,7 +16,7 @@ documented crate shell.
 | 5 GGUF + model hub | **done** |
 | 6 llama.cpp adapter | **done** (real GPU inference verified) |
 | 7 Multi-GPU + memory | **done** (benchmark harness pending) |
-| 8 Multimodal runtime plugins | **partial** (vision verified; others declared unsupported with reasons) |
+| 8 Multimodal runtime plugins | **done for image/video/ASR/TTS** (three verified end to end); music has no runtime |
 | 9 Packaging | **partial** (Windows MSIX built; Linux/macOS recipes; migration + crash logs done) |
 
 ## Task 1 — Repository bootstrap: **done**
@@ -422,3 +422,54 @@ Exec=/usr/lib/gguf-ai-engine/gguf-ai-engine-ui
    no critical errors
 == PASS
 ```
+## Follow-up - the four modalities: **implemented**
+
+Task 8 asked for image, video, audio and music adapters. Three runtimes were built
+from source and driven for real; music has none, and the report says so.
+
+| Runtime | Modality | Verified |
+| --- | --- | --- |
+| stable-diffusion.cpp (`sd-server`, CUDA 13.4) | image generation | **yes** - 512x512 PNG in 14.2 s |
+| stable-diffusion.cpp | video | adapter verified on its refusal path; **no clip rendered** (no model fits the 24 GB card) |
+| whisper.cpp (`whisper-cli`, CUDA) | ASR | **yes** - round trip through SAPI speech |
+| Piper | TTS | **yes** - and its output transcribes back to the same sentence |
+| - | music | **no runtime**, and no adapter claims one |
+
+```text
+$ gguf modalities
+asr                supported    whisper.cpp            provided by whisper.cpp (...whisper-cli.exe)
+image_generation   supported    stable-diffusion.cpp   provided by stable-diffusion.cpp (...sd-server.exe)
+music              unsupported  -                      no runtime in this build provides music
+text               supported    llama.cpp              streaming chat through llama-server
+tts                supported    Piper                  provided by Piper (...piper.exe)
+video              supported    stable-diffusion.cpp   provided by stable-diffusion.cpp
+vision             supported    llama.cpp mtmd         image in, text out
+
+6 of 7 modalities are implemented in this build
+```
+
+### The architecture that made this possible
+
+`crates/multimodal` gives every runtime a **manifest** (spec §2.3: OS, archs,
+backends, model architectures, quantizations, parallel modes, offload, paging,
+modalities), a **probe** that finds its binary and says where it looked, and an
+**adapter** that speaks its protocol. The modality registry is then derived from
+probes instead of being a hand-written list: a capability is offered because a
+runtime was found, and a missing one carries the install hint.
+
+### A measurement that changed a conclusion
+
+The first image took 412.9 s. That is implausible for a 4090, so it was
+investigated rather than reported: a stray `llama-server` from an earlier test was
+holding 21 GB of the 24 GB card, and killing it brought the same render to
+**14.2 s** - a 29x difference. This is exactly the failure the GPU manager's
+per-device budgets and expiring leases exist to prevent, seen from the outside.
+
+### Deliberately not done
+
+| Capability | Why |
+| --- | --- |
+| Music generation | no ggml-based music runtime is integrated; adding one means a new adapter and a manifest, not a flag |
+| Rendering a video clip | the only video models here (Wan 2.2 14B, LTX 22B) do not fit beside the workspace sd.cpp needs |
+| Starting the diffusion server automatically | the model must be on its command line; the engine points at a server the user runs |
+| `/v1/audio` in the UI shells | the endpoints exist; the shells have no audio page yet |

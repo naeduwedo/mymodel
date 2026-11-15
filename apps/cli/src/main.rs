@@ -135,6 +135,70 @@ enum Command {
     },
     /// Show the VRAM / RAM / NVMe tier picture.
     Memory,
+    /// Generate an image with the installed diffusion runtime.
+    Image {
+        /// What to draw.
+        #[arg(short, long)]
+        prompt: String,
+        /// Where to write the PNG.
+        #[arg(long, default_value = "image.png")]
+        out: String,
+        /// Width in pixels.
+        #[arg(long, default_value_t = 512)]
+        width: u32,
+        /// Height in pixels.
+        #[arg(long, default_value_t = 512)]
+        height: u32,
+        /// Sampling steps.
+        #[arg(long, default_value_t = 20)]
+        steps: u32,
+        /// Seed.
+        #[arg(long)]
+        seed: Option<i64>,
+        /// What to avoid.
+        #[arg(long)]
+        negative_prompt: Option<String>,
+    },
+    /// Generate a short video clip with the installed diffusion runtime.
+    Video {
+        /// What to show.
+        #[arg(short, long)]
+        prompt: String,
+        /// Where to write the clip.
+        #[arg(long, default_value = "video.mp4")]
+        out: String,
+        /// Width in pixels.
+        #[arg(long, default_value_t = 512)]
+        width: u32,
+        /// Height in pixels.
+        #[arg(long, default_value_t = 320)]
+        height: u32,
+        /// Frames to generate.
+        #[arg(long, default_value_t = 17)]
+        frames: u32,
+        /// Frames per second.
+        #[arg(long, default_value_t = 8)]
+        fps: u32,
+        /// Seed.
+        #[arg(long)]
+        seed: Option<i64>,
+    },
+    /// Transcribe an audio file with the installed speech-recognition runtime.
+    Transcribe {
+        /// Audio file (16-bit PCM WAV for whisper.cpp).
+        audio: PathBuf,
+        /// Spoken language, e.g. en.
+        #[arg(long)]
+        language: Option<String>,
+    },
+    /// Synthesise speech with the installed TTS runtime.
+    Speak {
+        /// Text to speak.
+        text: String,
+        /// Where to write the WAV.
+        #[arg(long, default_value = "speech.wav")]
+        out: PathBuf,
+    },
     /// Measure tokens per second and VRAM per offload strategy.
     Benchmark {
         /// Model id from the registry, or a path to a GGUF file.
@@ -358,6 +422,70 @@ async fn run(cli: Cli) -> Result<ExitCode> {
                 cli.json,
             )
             .await?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Image {
+            prompt,
+            out,
+            width,
+            height,
+            steps,
+            seed,
+            negative_prompt,
+        } => {
+            let options = commands::ImageOptions {
+                out,
+                width,
+                height,
+                steps,
+                seed,
+                negative_prompt,
+            };
+            let ok = commands::image(&ctx, &prompt, options, cli.json).await?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Video {
+            prompt,
+            out,
+            width,
+            height,
+            frames,
+            fps,
+            seed,
+        } => {
+            let options = commands::VideoOptions {
+                out,
+                width,
+                height,
+                frames,
+                fps,
+                seed,
+            };
+            let ok = commands::video(&ctx, &prompt, options, cli.json).await?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Transcribe { audio, language } => {
+            let ok = commands::transcribe_audio(&ctx, &audio, language.as_deref(), cli.json)?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Speak { text, out } => {
+            let ok = commands::speak(&ctx, &text, &out, cli.json)?;
             Ok(if ok {
                 ExitCode::SUCCESS
             } else {

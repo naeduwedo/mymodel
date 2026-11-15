@@ -276,7 +276,12 @@ async fn run_daemon(config: &Config, paths: &AppPaths) -> ExitCode {
         };
 
         let backend = std::sync::Arc::new(gguf_engine_api_server::IpcBackend::new(paths.root()));
-        match gguf_engine_api_server::serve(api_config, backend).await {
+        // The media endpoints probe the non-LLM runtimes; when none is installed
+        // they answer 503 with the probe's reason instead of failing obscurely.
+        let media = std::sync::Arc::new(gguf_engine_api_server::LocalMedia::from_config(
+            &config.multimodal,
+        ));
+        match gguf_engine_api_server::serve(api_config, backend, media).await {
             Ok(gateway) => {
                 tracing::info!(address = %gateway.address(), "API gateway listening");
                 Some(gateway)

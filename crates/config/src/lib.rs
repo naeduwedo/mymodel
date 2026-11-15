@@ -50,6 +50,37 @@ pub struct Config {
     /// Local API server settings.
     #[serde(default)]
     pub api: ApiConfig,
+    /// Non-LLM runtime settings (spec §2.3).
+    #[serde(default)]
+    pub multimodal: MultimodalConfig,
+}
+
+/// `[multimodal]` — model files for the image, speech and audio runtimes.
+///
+/// The runtime binaries are discovered from `PATH` and
+/// `GGUF_ENGINE_RUNTIME_DIR`; what cannot be guessed is which model file to load,
+/// so that is configuration. An empty entry means "this modality is not set up",
+/// which the probe reports as such rather than failing at request time.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MultimodalConfig {
+    /// Diffusion model for image and video generation (a `.gguf` or `.safetensors`).
+    #[serde(default)]
+    pub image_model: Option<String>,
+    /// URL of a running diffusion server, e.g. `http://127.0.0.1:1234`.
+    ///
+    /// The runtime is its own process: it needs the model on its command line and
+    /// preloading it takes tens of seconds, so the engine points at one rather
+    /// than starting a fresh server per request. Empty means "use the runtime's
+    /// default port".
+    #[serde(default)]
+    pub diffusion_url: Option<String>,
+    /// whisper.cpp model file (`ggml-*.bin`).
+    #[serde(default)]
+    pub asr_model: Option<String>,
+    /// Piper voice model (`*.onnx`).
+    #[serde(default)]
+    pub tts_voice: Option<String>,
 }
 
 /// `[core]` — daemon identity, ports and lifecycle behaviour.

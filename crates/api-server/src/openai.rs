@@ -231,3 +231,63 @@ pub struct EmbeddingsResponse {
     /// Token accounting.
     pub usage: Usage,
 }
+/// An OpenAI image generation request.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ImageGenerationRequest {
+    /// The prompt.
+    pub prompt: String,
+    /// Model id; passed through when the runtime supports several.
+    #[serde(default)]
+    pub model: Option<String>,
+    /// `WxH`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<String>,
+    /// How many images. Only 1 is honoured; see `routes::images_generations`.
+    #[serde(default)]
+    pub n: Option<u32>,
+}
+
+/// One image in a response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImageDatum {
+    /// Base64-encoded image bytes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub b64_json: Option<String>,
+    /// URL, when the runtime hosts the image instead.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+/// An OpenAI image generation response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImageGenerationResponse {
+    /// Creation time, unix seconds.
+    pub created: u64,
+    /// The images.
+    pub data: Vec<ImageDatum>,
+    /// Model used.
+    pub model: String,
+}
+
+/// An OpenAI speech synthesis request.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AudioSpeechRequest {
+    /// Model id.
+    #[serde(default)]
+    pub model: Option<String>,
+    /// The text to speak.
+    pub input: String,
+    /// Voice name; the configured Piper voice is used, so this is advisory.
+    #[serde(default)]
+    pub voice: Option<String>,
+    /// Response format. Only `wav` is produced; see `routes::audio_speech`.
+    #[serde(default)]
+    pub response_format: Option<String>,
+}
+
+/// An OpenAI transcription response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TranscriptionResponse {
+    /// The recognised text.
+    pub text: String,
+}

@@ -139,14 +139,14 @@ fn daemon_serves_health_over_the_platform_transport() {
             .collect();
         assert_eq!(
             unimplemented,
-            vec!["multimodal_other"],
-            "only the modalities without a runtime may be unimplemented"
+            vec!["music_generation"],
+            "only music has no runtime adapter in this build"
         );
 
         let gap = health
             .components
             .iter()
-            .find(|c| c.name == "multimodal_other")
+            .find(|c| c.name == "music_generation")
             .expect("the gap is listed, not hidden");
         assert!(
             !gap.detail.is_empty(),

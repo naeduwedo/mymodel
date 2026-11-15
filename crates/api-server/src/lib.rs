@@ -23,6 +23,7 @@
 pub mod backend;
 pub mod config;
 pub mod error;
+pub mod media;
 pub mod openai;
 pub mod routes;
 pub mod server;
@@ -30,6 +31,7 @@ pub mod server;
 pub use backend::{Backend, ChunkStream, IpcBackend};
 pub use config::{ApiConfig, ConfigError, DEFAULT_PORT, Exposure, MIN_TOKEN_LEN};
 pub use error::ApiError;
+pub use media::{LocalMedia, MediaBackend, image_response, parse_size};
 pub use openai::{
     ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ModelEntry,
     ModelList,

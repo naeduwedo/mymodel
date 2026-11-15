@@ -102,10 +102,22 @@ pub fn features() -> Vec<Feature> {
         // Task 8: vision is real; the other modalities are listed by
         // gguf_engine_runtime_manager::modalities() with their own reasons.
         Feature::new("vision", FeatureStatus::Supported, None),
+        // Task 8 follow-up: the non-LLM adapters exist. Whether each *works here*
+        // depends on a runtime being installed, which `gguf modalities` reports
+        // after probing - a capability being implemented is not the same claim as
+        // a runtime being present, and the CLI shows the difference.
+        Feature::new("image_generation", FeatureStatus::Supported, None),
+        Feature::new("video_generation", FeatureStatus::Supported, None),
+        Feature::new("speech_recognition", FeatureStatus::Supported, None),
+        Feature::new("speech_synthesis", FeatureStatus::Supported, None),
         Feature::new(
-            "multimodal_other",
+            "music_generation",
             FeatureStatus::Planned,
-            Some("image generation, video, audio and music have no runtime adapter yet".to_owned()),
+            Some(
+                "no music-generation runtime is integrated; it needs a new adapter and a \
+                 manifest, not a flag"
+                    .to_owned(),
+            ),
         ),
         // Task 9 follow-up: InferenceService streams chat over the local transport,
         // which is the path the UI shells use.
@@ -184,6 +196,10 @@ mod tests {
                 "multi_gpu_scheduling",
                 "memory_paging",
                 "vision",
+                "image_generation",
+                "video_generation",
+                "speech_recognition",
+                "speech_synthesis",
                 "inference",
                 "http_api"
             ],

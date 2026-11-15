@@ -10,6 +10,11 @@
 use serde::{Deserialize, Serialize};
 
 /// A modality the product may expose.
+///
+/// The variants beyond `Text` and `Vision` are the shared vocabulary used by the
+/// multimodal crate's manifests; they are not returned by `modalities()` because
+/// this crate does not implement them.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Modality {
@@ -80,10 +85,15 @@ pub struct ModalitySupport {
     pub detail: String,
 }
 
-/// The modality matrix of this build.
+/// The modalities **this crate's adapters** implement.
 ///
-/// Text and vision run through llama.cpp. The rest have no adapter, and each
-/// reason names the missing runtime rather than implying a hardware fault.
+/// Only text and vision: everything else is provided by a separate upstream
+/// runtime with its own binary and protocol, and is reported by
+/// `gguf_engine_multimodal::modality_report` after actually probing for it.
+///
+/// The split is deliberate. Listing `image_generation` here as "unsupported"
+/// would be a guess: whether an image can be made depends on whether
+/// stable-diffusion.cpp is installed, which this crate cannot know.
 pub fn modalities() -> Vec<ModalitySupport> {
     vec![
         ModalitySupport {
@@ -97,36 +107,6 @@ pub fn modalities() -> Vec<ModalitySupport> {
             status: ModalityStatus::Supported,
             runtime: Some("llama.cpp mtmd".to_owned()),
             detail: "image in, text out; needs an mmproj companion file".to_owned(),
-        },
-        ModalitySupport {
-            modality: Modality::ImageGeneration,
-            status: ModalityStatus::Unsupported,
-            runtime: None,
-            detail: "no diffusion runtime adapter is implemented".to_owned(),
-        },
-        ModalitySupport {
-            modality: Modality::Video,
-            status: ModalityStatus::Unsupported,
-            runtime: None,
-            detail: "no video runtime adapter is implemented".to_owned(),
-        },
-        ModalitySupport {
-            modality: Modality::Asr,
-            status: ModalityStatus::Unsupported,
-            runtime: None,
-            detail: "no speech-recognition adapter is implemented".to_owned(),
-        },
-        ModalitySupport {
-            modality: Modality::Tts,
-            status: ModalityStatus::Unsupported,
-            runtime: None,
-            detail: "no speech-synthesis adapter is implemented".to_owned(),
-        },
-        ModalitySupport {
-            modality: Modality::Music,
-            status: ModalityStatus::Unsupported,
-            runtime: None,
-            detail: "no music-generation adapter is implemented".to_owned(),
         },
     ]
 }

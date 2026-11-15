@@ -89,6 +89,7 @@ Verify any claim with `cargo run -p gguf-engine-cli -- doctor`.
 | Hardware / GPU probes | **done (Task 4)** — see [hardware-inventory.md](hardware-inventory.md) | `hardware` crate `STATUS = Planned` |
 | GGUF parser, Hub download | **done (Task 5)** — see [gguf-and-model-hub.md](gguf-and-model-hub.md) | `gguf`, `model-hub` `STATUS = Planned` |
 | llama.cpp adapter | Task 6 | `runtime-llama-cpp` `STATUS = Planned`; `gguf-worker` exits 4 |
+| Non-LLM runtimes (image, video, speech) | **done** — see [multimodal-runtimes.md](multimodal-runtimes.md) |
 | Multi-GPU planning, paging | **done (Task 7)** — see [multi-gpu-and-memory.md](multi-gpu-and-memory.md) | `gpu-manager`, `memory-manager` `STATUS = Planned` |
 | Native UI shells | Task 3 | `platforms/` holds only READMEs |
 
