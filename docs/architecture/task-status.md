@@ -202,7 +202,7 @@ silently attached (ADR-018).
 | Deliverable | State | Evidence |
 | --- | --- | --- |
 | Windows MSIX | **built and verified** | `scripts/package-windows.ps1` → 69.8 MB package; `makeappx unpack` succeeds and lists all binaries |
-| Linux deb / rpm | recipe only | `packaging/linux/nfpm.yaml` + scripts; **not built** (no Linux machine) |
+| Linux deb / rpm | **built, installed and run** | `packaging/linux/build-packages.sh`: .deb + .rpm produced, .deb installed, `gguf doctor` passes over a Unix socket, uninstall keeps user data |
 | macOS DMG | recipe only | `packaging/macos/README.md`; the shell it would wrap is still planned |
 | Signing / verification | documented, not automated | signing is a release decision (ADR-019); scripts emit unsigned artifacts |
 | Auto-update | **not implemented** | needs a signed channel + rollback policy; half of it would be worse than none |
@@ -351,3 +351,31 @@ first 3 values: 1.0292757, -1.3270983, 0.1801005
 llama.cpp exposes embeddings on its native `/embedding` endpoint (one input per
 request) and its `/v1/embeddings` answers 400 on this build, so the gateway
 translates and sends one request per input rather than pretending to batch.
+## Follow-up - Linux packages built: **done**
+
+The recipe stopped being a claim. `packaging/linux/build-packages.sh` produces both
+formats and then verifies the .deb's file list against what the README promises.
+
+```text
+created package: dist/gguf-ai-engine_0.1.0_amd64.deb      (12.1 MB)
+created package: dist/gguf-ai-engine-0.1.0-1.x86_64.rpm  (12.4 MB)
+== verifying the .deb file list
+   all expected files present
+```
+
+Then installed and run, which is the only thing that proves a package works:
+
+```text
+$ gguf version --json      -> { "os": "linux", "protocol": 2 }
+$ gguf doctor              -> ipc: /tmp/.../run/core.sock, database schema v2, core ready
+$ dpkg -r gguf-ai-engine
+   user data survived the uninstall
+```
+
+The doctor output also proves the **Unix-socket IPC transport** works: the same
+code path that did not compile before this round.
+
+A defect found while doing it: `nfpm` expands `{{ .Env.VERSION }}` in the package
+metadata but writes the raw template into the file name, producing
+`gguf-ai-engine_{{ .Env.VERSION }}_amd64.deb`. The script now resolves the version
+itself and refuses to run if any template survives into the generated config.

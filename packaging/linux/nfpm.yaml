@@ -10,7 +10,9 @@
 name: gguf-ai-engine
 arch: amd64
 platform: linux
-version: 0.1.0
+# Read from Cargo.toml by build-packages.sh, so the package version can never
+# disagree with the binaries it contains.
+version: "{{ .Env.VERSION }}"
 section: utils
 priority: optional
 maintainer: GGUF AI Engine contributors

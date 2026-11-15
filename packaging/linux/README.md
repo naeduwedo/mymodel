@@ -1,11 +1,32 @@
 # Linux packaging (deb / rpm / AppImage) - **recipe only, not built**
 
-Status: **unverified on the development machine**. Nothing here has been built
-locally, because no Linux machine was available while writing it.
+Status: **built, installed and run** (Ubuntu 26.04 under WSL, nfpm, Rust 1.100).
 
-[`.github/workflows/package-linux.yml`](../../.github/workflows/package-linux.yml)
-now builds and tests these packages on every relevant push. The recipe becomes a
-deliverable the first time that job runs green - not before.
+```text
+$ bash packaging/linux/build-packages.sh
+version: 0.1.0
+created package: dist/gguf-ai-engine_0.1.0_amd64.deb
+created package: dist/gguf-ai-engine-0.1.0-1.x86_64.rpm
+== verifying the .deb file list
+   all expected files present
+== PASS
+```
+
+Installing that .deb and running the installed binary:
+
+```text
+$ dpkg -i dist/gguf-ai-engine_0.1.0_amd64.deb
+$ gguf version --json
+{ "cli": "0.1.0", "core": "0.1.0", "protocol": 2, "os": "linux", "arch": "x86_64" }
+
+$ gguf doctor --data-dir /tmp/gguf-inst-test
+ipc  : /tmp/gguf-inst-test/run/core.sock
+[ok  ] database        schema v2 (expected v2), sqlite 3.50.2
+[ok  ] core lifecycle  2 transitions, ready
+```
+
+Removing the package leaves `~/.local/share/gguf-ai-engine` intact (checked by
+writing a file there first and confirming it afterwards).
 
 ## What is here
 

@@ -33,3 +33,5 @@ target/package/
 *.msixbundle
 # Scratch file used to pass multi-line commit messages on Windows
 .git-commit-msg.txt
+# Linux package build output
+/dist/

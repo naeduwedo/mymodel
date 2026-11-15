@@ -3,7 +3,7 @@
 | Platform | Format | Status |
 | --- | --- | --- |
 | Windows | MSIX | **built and verified** (`scripts/package-windows.ps1`) |
-| Linux | deb / rpm via nfpm | **recipe only** locally; `.github/workflows/package-linux.yml` builds and tests it in CI |
+| Linux | deb / rpm via nfpm | **built, installed and run** (`packaging/linux/build-packages.sh`); CI repeats it |
 | macOS | DMG | **recipe only** — the shell itself is still planned |
 
 ```text
