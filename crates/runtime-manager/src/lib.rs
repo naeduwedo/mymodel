@@ -12,10 +12,15 @@
 #![warn(missing_docs)]
 
 pub mod adapter;
+pub mod benchmark;
 pub mod modality;
 pub mod types;
 
 pub use adapter::{BoxedAdapter, LoadPlan, MemoryEstimate, RuntimeAdapter, TokenStream};
+pub use benchmark::{
+    BenchmarkReport, RunSample, StrategyReport, peak_vram_during, sample_vram_bytes,
+    strategy_layers,
+};
 pub use modality::{Modality, ModalityStatus, ModalitySupport, modalities, supports};
 pub use types::{
     Capability, CapabilityStatus, ChatMessage, ChatRequest, RuntimeCapabilities, RuntimeError,

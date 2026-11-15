@@ -1,6 +1,7 @@
 //! CLI command implementations.
 
 mod ask;
+mod benchmark;
 mod chat;
 mod config;
 mod doctor;
@@ -22,6 +23,7 @@ use anyhow::{Context as _, Result};
 use gguf_engine_config::{AppPaths, Config};
 
 pub use ask::ask;
+pub use benchmark::benchmark;
 pub use chat::chat;
 pub use config::config;
 pub use doctor::doctor;

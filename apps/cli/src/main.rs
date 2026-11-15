@@ -135,6 +135,15 @@ enum Command {
     },
     /// Show the VRAM / RAM / NVMe tier picture.
     Memory,
+    /// Measure tokens per second and VRAM per offload strategy.
+    Benchmark {
+        /// Model id from the registry, or a path to a GGUF file.
+        #[arg(long)]
+        model: String,
+        /// Measured runs per strategy (a warm-up run is added).
+        #[arg(long, default_value_t = 3)]
+        runs: usize,
+    },
     /// List every modality and whether this build supports it.
     Modalities,
     /// Describe an image with a multimodal model.
@@ -349,6 +358,14 @@ async fn run(cli: Cli) -> Result<ExitCode> {
                 cli.json,
             )
             .await?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Benchmark { model, runs } => {
+            let ok = commands::benchmark(&model, runs, cli.json).await?;
             Ok(if ok {
                 ExitCode::SUCCESS
             } else {
