@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GGUF AI Engine
+Comment=Local GGUF model manager and inference platform
+Exec=/usr/lib/gguf-ai-engine/gguf-ai-engine-ui
+Terminal=false
+Categories=Development;Science;
+# The shell binary is installed by the GTK4 packaging step; until that exists
+# this entry will not launch. Kept here so the package layout is complete.

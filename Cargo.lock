@@ -942,6 +942,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "serde",
+ "tempfile",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",

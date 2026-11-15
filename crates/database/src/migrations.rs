@@ -25,13 +25,20 @@ pub struct Migration {
 }
 
 /// All migrations, in application order.
-pub const MIGRATIONS: &[Migration] = &[Migration {
-    version: 1,
-    name: "init",
-    // Path is relative to this source file (crates/database/src/), so the
-    // schema lives at the workspace root next to the other migration files.
-    sql: include_str!("../../../migrations/0001_init.sql"),
-}];
+pub const MIGRATIONS: &[Migration] = &[
+    Migration {
+        version: 1,
+        name: "init",
+        // Path is relative to this source file (crates/database/src/), so the
+        // schema lives at the workspace root next to the other migration files.
+        sql: include_str!("../../../migrations/0001_init.sql"),
+    },
+    Migration {
+        version: 2,
+        name: "app_metadata",
+        sql: include_str!("../../../migrations/0002_app_metadata.sql"),
+    },
+];
 
 /// Current (latest) schema version.
 pub fn latest_version() -> i64 {

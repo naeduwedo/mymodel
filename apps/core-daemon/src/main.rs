@@ -109,6 +109,11 @@ async fn async_main(args: Args, format: LogFormat) -> ExitCode {
         return ExitCode::FAILURE;
     }
 
+    // Install the crash hook as early as possible: a panic during startup is
+    // exactly the case a user cannot otherwise report.
+    let crash_dir = gguf_engine_telemetry::crash::install(paths.logs());
+    tracing::debug!(directory = %crash_dir.display(), "crash reporting enabled");
+
     if args.check {
         return check_mode(&paths);
     }

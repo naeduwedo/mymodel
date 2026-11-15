@@ -1,0 +1,6 @@
+#!/bin/sh
+# Command line entry point installed by the package.
+#
+# The real binary lives in /usr/lib/gguf-ai-engine so that a future runtime
+# update can replace binaries without touching /usr/bin.
+exec /usr/lib/gguf-ai-engine/gguf "$@"

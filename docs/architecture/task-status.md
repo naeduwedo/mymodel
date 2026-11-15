@@ -16,8 +16,8 @@ documented crate shell.
 | 5 GGUF + model hub | **done** |
 | 6 llama.cpp adapter | **done** (real GPU inference verified) |
 | 7 Multi-GPU + memory | **done** (benchmark harness pending) |
-| 8 Multimodal runtime plugins | **planned** |
-| 9 Packaging | **planned** |
+| 8 Multimodal runtime plugins | **partial** (vision verified; others declared unsupported with reasons) |
+| 9 Packaging | **partial** (Windows MSIX built; Linux/macOS recipes; migration + crash logs done) |
 
 ## Task 1 — Repository bootstrap: **done**
 
@@ -156,12 +156,81 @@ pressure : nominal
 | Engine-managed tensor paging | gated off (ADR-005); llama.cpp manages its own memory |
 | Wiring the plan into `gguf chat` | the adapter still takes an explicit `--n-gpu-layers`; using a plan there is follow-up work |
 
-## Task 8 — Multimodal runtime plugins: planned
+## Task 8 — Multimodal runtime plugins: **partial** (vision done, rest declared)
 
-Per-adapter fixtures, compatibility tests and resource estimates. An adapter
-without a real compatibility test is not shipped.
+| Modality | State | Evidence |
+| --- | --- | --- |
+| Text | **done** | llama.cpp, Task 6 |
+| Vision (image in) | **done, verified on real hardware** | `llama-mtmd-cli` + `mmproj`; a 27B model answered a real question about a real image |
+| Image generation | unsupported | no diffusion adapter; `gguf modalities` says so |
+| Video | unsupported | no video adapter |
+| ASR | unsupported | no speech-recognition adapter |
+| TTS | unsupported | no speech-synthesis adapter |
+| Music | unsupported | no music-generation adapter |
 
-## Task 9 — Packaging: planned
+```text
+$ gguf modalities
+modality           status         runtime                detail
+text               supported      llama.cpp              streaming chat through llama-server
+vision             supported      llama.cpp mtmd         image in, text out; needs an mmproj companion file
+image_generation   unsupported    -                      no diffusion runtime adapter is implemented
+video              unsupported    -                      no video runtime adapter is implemented
+asr                unsupported    -                      no speech-recognition adapter is implemented
+tts                unsupported    -                      no speech-synthesis adapter is implemented
+music              unsupported    -                      no music-generation adapter is implemented
 
-Installers and update flow. `gguf-core --check` already emits a machine-readable
-startup report intended for installers and service health checks.
+2 of 7 modalities are implemented in this build
+
+$ gguf vision --model Qwen3.8-27B.gguf --mmproj mmproj-Qwen3.8-27B-Q8_0.gguf --image test.png
+The shape in the image is **yellow**. It's a solid yellow circle set against a blue...
+```
+
+Multimodal manifests pair `mmproj-*.gguf` companions with their weights and mark the
+projector `required`; an unrelated projector is reported as an orphan rather than
+silently attached (ADR-018).
+
+### Deliberately not in this task
+
+| Capability | Why |
+| --- | --- |
+| Diffusion / video / audio / music adapters | no runtime is installed or specified; marking them supported would be a fake feature |
+| A resident vision session | `llama-mtmd-cli` is one-shot, so each request reloads the model; the CLI states this cost |
+| Vision over the gRPC API | `InferenceService` is still unimplemented (Task 9 follow-up) |
+
+## Task 9 — Packaging: **partial** (Windows verified, Linux/macOS recipes)
+
+| Deliverable | State | Evidence |
+| --- | --- | --- |
+| Windows MSIX | **built and verified** | `scripts/package-windows.ps1` → 69.8 MB package; `makeappx unpack` succeeds and lists all binaries |
+| Linux deb / rpm | recipe only | `packaging/linux/nfpm.yaml` + scripts; **not built** (no Linux machine) |
+| macOS DMG | recipe only | `packaging/macos/README.md`; the shell it would wrap is still planned |
+| Signing / verification | documented, not automated | signing is a release decision (ADR-019); scripts emit unsigned artifacts |
+| Auto-update | **not implemented** | needs a signed channel + rollback policy; half of it would be worse than none |
+| Runtime independent update | design only | runtimes install per-user, outside the package (spec §15) |
+| User data migration | **done** | `Database::open_with_backup` backs up before migrating, aborts if the copy fails; 6 tests |
+| Crash logs | **done** | panic hook writes `crash-<ms>.log`; `gguf doctor` lists them by path |
+| Docs | done | `packaging/README.md` plus one README per platform |
+
+```text
+$ ./scripts/package-windows.ps1
+makeappx  : ...\10.0.26100.0\x64\makeappx.exe
+version   : 0.1.0.0
+shell     : published to target/package/stage/shell
+package   : target/package/windows/GGUFAIEngine-0.1.0-x64.msix
+size      : 69.8 MB
+```
+
+```text
+$ gguf doctor
+[ok  ] database           schema v2 (expected v2), sqlite 3.50.2
+[ok  ] crash reports      none in ...\logs
+```
+
+### Deliberately not in this task
+
+| Capability | Why |
+| --- | --- |
+| Linux / macOS installers | no machine to build them on; a recipe that was never built is not a deliverable |
+| Code signing | needs a certificate the project does not have; automating it would produce untrustworthy packages |
+| Auto-update | requires a signed channel, downgrade policy and rollback; the database already refuses downgrades |
+| Runtime auto-install | runtimes are per-user and independent by design (spec §15) |

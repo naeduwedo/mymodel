@@ -1,0 +1,60 @@
+# nfpm configuration for .deb and .rpm packages (spec §13 Phase 6).
+#
+# nfpm (https://nfpm.goreleaser.com) builds both formats from one file, which
+# keeps the two package definitions from drifting apart.
+#
+# STATUS: NOT BUILT. No Linux machine or container was available while writing
+# this, so it is a reviewed recipe, not a verified artifact. CI must build it
+# before the Linux package is claimed to work.
+
+name: gguf-ai-engine
+arch: amd64
+platform: linux
+version: 0.1.0
+section: utils
+priority: optional
+maintainer: GGUF AI Engine contributors
+description: |
+  Local GGUF model manager and inference platform.
+
+  Provides the core daemon (gguf-core), the command line client (gguf) and the
+  isolated runtime worker (gguf-worker). Model files and runtimes are installed
+  per-user at first run, not shipped in the package.
+vendor: GGUF AI Engine contributors
+homepage: https://example.invalid/gguf-ai-engine
+license: Apache-2.0
+
+contents:
+  - src: target/release/gguf-core
+    dst: /usr/lib/gguf-ai-engine/gguf-core
+    file_info:
+      mode: 0755
+  - src: target/release/gguf
+    dst: /usr/lib/gguf-ai-engine/gguf
+    file_info:
+      mode: 0755
+  - src: target/release/gguf-worker
+    dst: /usr/lib/gguf-ai-engine/gguf-worker
+    file_info:
+      mode: 0755
+
+  # Command line entry point on PATH. The daemon is started by the desktop app,
+  # not by a system service: it is a per-user process with a per-user data dir.
+  - src: packaging/linux/gguf
+    dst: /usr/bin/gguf
+    file_info:
+      mode: 0755
+
+  - src: packaging/linux/gguf-ai-engine.desktop
+    dst: /usr/share/applications/gguf-ai-engine.desktop
+  - src: packaging/linux/README.packaged.md
+    dst: /usr/share/doc/gguf-ai-engine/README.md
+
+  # Empty directories the app creates on first run; declaring them makes the
+  # package's file list match what the app expects.
+  - dst: /usr/lib/gguf-ai-engine/runtimes
+    type: dir
+
+scripts:
+  postinstall: packaging/linux/postinstall.sh
+  preremove: packaging/linux/preremove.sh

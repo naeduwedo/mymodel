@@ -78,7 +78,28 @@ pub struct Database {
 
 impl Database {
     /// Open (creating if needed) and migrate a database file.
+    ///
+    /// Migrating an existing database copies it first (see
+    /// [`Self::open_with_backup`]); this convenience form discards the backup
+    /// path. Callers that want to tell the user where the backup went should use
+    /// the explicit form.
     pub fn open(path: impl AsRef<Path>) -> Result<Self, DbError> {
+        Self::open_with_backup(path).map(|(database, _)| database)
+    }
+
+    /// Open and migrate, returning the path of the pre-migration backup when one
+    /// was made.
+    ///
+    /// Spec §10 requires a backup strategy for migrations. The rule here:
+    ///
+    /// * a **fresh** database is not backed up (there is nothing to lose);
+    /// * an **up-to-date** database is not backed up (nothing will change);
+    /// * a database that will actually be migrated is copied to
+    ///   `<name>.backup-v<from>` before the first migration runs.
+    ///
+    /// A failed backup aborts the open: running a migration on unbacked-up user
+    /// data is exactly what the requirement exists to prevent.
+    pub fn open_with_backup(path: impl AsRef<Path>) -> Result<(Self, Option<PathBuf>), DbError> {
         let path = path.as_ref().to_path_buf();
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|source| DbError::Open {
@@ -86,11 +107,32 @@ impl Database {
                 source: rusqlite::Error::ToSqlConversionFailure(Box::new(source)),
             })?;
         }
+
         let mut conn = Connection::open(&path).map_err(|source| DbError::Open {
             path: path.display().to_string(),
             source,
         })?;
         configure(&conn, &path)?;
+
+        // Decide whether a backup is needed before touching anything.
+        let existing_version = current_version(&conn)?;
+        let backup = if existing_version > 0 && existing_version < latest_version() {
+            let backup_path = path.with_extension(format!("backup-v{existing_version}"));
+            std::fs::copy(&path, &backup_path).map_err(|source| DbError::Open {
+                path: backup_path.display().to_string(),
+                source: rusqlite::Error::ToSqlConversionFailure(Box::new(source)),
+            })?;
+            tracing::info!(
+                from = existing_version,
+                to = latest_version(),
+                backup = %backup_path.display(),
+                "backed up the database before migrating"
+            );
+            Some(backup_path)
+        } else {
+            None
+        };
+
         let outcome = apply(&mut conn)?;
         tracing::info!(
             from = outcome.from,
@@ -99,11 +141,14 @@ impl Database {
             path = %path.display(),
             "database ready"
         );
-        Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
-            path,
-            in_memory: false,
-        })
+        Ok((
+            Self {
+                conn: Arc::new(Mutex::new(conn)),
+                path,
+                in_memory: false,
+            },
+            backup,
+        ))
     }
 
     /// Open an in-memory database (tests).

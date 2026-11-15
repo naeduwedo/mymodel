@@ -47,6 +47,29 @@ fn check_dirs(ctx: &Context) -> Check {
     }
 }
 
+/// Report any crash reports left behind, so support can ask for one.
+///
+/// This is informational: old crash files are not a failure of the current
+/// install, so the check always passes and only reports what it found.
+fn check_crash_reports(ctx: &Context) -> Check {
+    let reports = gguf_engine_telemetry::crash::reports(ctx.paths.logs());
+    let detail = if reports.is_empty() {
+        format!("none in {}", ctx.paths.logs().display())
+    } else {
+        format!(
+            "{} report(s); newest: {}",
+            reports.len(),
+            reports[0].display()
+        )
+    };
+
+    Check {
+        name: "crash reports".into(),
+        ok: true,
+        detail,
+    }
+}
+
 fn check_disk_space(ctx: &Context) -> Check {
     // A conservative check: the models directory must exist and be writable.
     let probe = ctx.paths.cache().join(".doctor-write-probe");
@@ -246,6 +269,7 @@ pub async fn doctor(ctx: &Context, json: bool) -> Result<bool> {
         check_database(ctx).await,
         check_core_health().await,
         check_live_core(ctx).await,
+        check_crash_reports(ctx),
     ];
     let planned = vec![
         "hardware inventory (Task 4)".to_owned(),

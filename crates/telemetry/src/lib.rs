@@ -8,6 +8,8 @@
 
 #![warn(missing_docs)]
 
+pub mod crash;
+
 use tracing_subscriber::EnvFilter;
 
 /// Whether this module is implemented.
