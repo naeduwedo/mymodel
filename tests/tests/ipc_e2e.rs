@@ -115,14 +115,20 @@ fn daemon_serves_health_over_the_platform_transport() {
             .find(|c| c.name == "database")
             .expect("database component");
         assert!(database.healthy, "{database:?}");
-        assert!(database.detail.contains("schema v1"), "{}", database.detail);
+        // The schema version moves with every migration; assert the shape, not a
+        // literal, so adding a migration does not break this test.
+        assert!(
+            database.detail.contains("schema v"),
+            "the database check must report its schema version: {}",
+            database.detail
+        );
 
         // llama.cpp is implemented (Task 6); a still-planned component must
         // instead appear unhealthy with a reason.
         let planned = health
             .components
             .iter()
-            .find(|c| c.name == "multimodal")
+            .find(|c| c.name == "multimodal_other")
             .expect("planned components are listed, not hidden");
         assert!(!planned.healthy);
         assert!(!planned.detail.is_empty(), "a gap must have a reason");

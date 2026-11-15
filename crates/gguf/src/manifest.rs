@@ -343,3 +343,155 @@ mod tests {
         assert_eq!(no_hash.state, with_hash.state);
     }
 }
+// ---------------------------------------------------------------------------
+// Multimodal companions (spec 7.2: auxiliary components must be transparent).
+// ---------------------------------------------------------------------------
+
+/// A companion file that a multimodal model needs besides its weights.
+///
+/// llama.cpp keeps the vision/audio encoder in a separate `mmproj-*.gguf` file.
+/// A model with such a companion is **not** fully described by its weights file,
+/// so the manifest must list it and the compatibility check must know about it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Companion {
+    /// Repository path or local file name.
+    pub path: String,
+    /// What it provides: `vision`, `audio`, ...
+    pub provides: Modality,
+    /// Whether the model cannot run without it.
+    pub required: bool,
+}
+
+/// True when a file name looks like a multimodal projector.
+///
+/// Deliberately narrow: `mmproj-` is the convention llama.cpp tooling writes, and
+/// guessing beyond it would produce false positives on ordinary models.
+pub fn looks_like_mmproj(file_name: &str) -> bool {
+    let lower = file_name.to_ascii_lowercase();
+    lower.contains("mmproj") && lower.ends_with(".gguf")
+}
+
+/// Pair projector files with the weight file they belong to.
+///
+/// Pairing rule: a projector whose name shares the base model's stem prefix is
+/// paired with it; a projector with no base model present is returned as an
+/// orphan so the caller can report it rather than silently ignoring it.
+pub fn pair_companions<'a>(
+    weights_path: &str,
+    candidates: impl IntoIterator<Item = &'a str>,
+) -> (Vec<Companion>, Vec<String>) {
+    let stem = weights_path
+        .rsplit_once(['/', '\\'])
+        .map(|(_, name)| name)
+        .unwrap_or(weights_path)
+        .trim_end_matches(".gguf")
+        .to_ascii_lowercase();
+
+    let mut companions = Vec::new();
+    let mut orphans = Vec::new();
+
+    for candidate in candidates {
+        if !looks_like_mmproj(candidate) {
+            continue;
+        }
+
+        let lower = candidate.to_ascii_lowercase();
+        // The projector name embeds the model family; require a shared token so
+        // an unrelated projector is not silently attached.
+        let shared = model_family_tokens(&lower)
+            .iter()
+            .any(|token| stem.contains(token.as_str()));
+
+        if shared {
+            companions.push(Companion {
+                path: candidate.to_owned(),
+                provides: Modality::Vision,
+                required: true,
+            });
+        } else {
+            orphans.push(candidate.to_owned());
+        }
+    }
+
+    companions.sort_by(|a, b| a.path.cmp(&b.path));
+    orphans.sort();
+    (companions, orphans)
+}
+
+/// Tokens that identify the model family inside an `mmproj-<family>-...` name.
+fn model_family_tokens(name: &str) -> Vec<String> {
+    name.split(['-', '_', '.'])
+        .filter(|part| {
+            part.len() > 2
+                && *part != "mmproj"
+                && *part != "gguf"
+                && *part != "f16"
+                && *part != "f32"
+                && *part != "q8"
+                && *part != "q4"
+        })
+        .map(str::to_owned)
+        .collect()
+}
+
+#[cfg(test)]
+mod companion_tests {
+    use super::*;
+
+    #[test]
+    fn mmproj_files_are_recognised_by_the_convention_only() {
+        assert!(looks_like_mmproj("mmproj-model-f16.gguf"));
+        assert!(looks_like_mmproj("MMPROJ-Model-Q8_0.GGUF"));
+        assert!(!looks_like_mmproj("model-Q4_K_M.gguf"));
+        assert!(!looks_like_mmproj("mmproj-notes.txt"));
+    }
+
+    #[test]
+    fn a_matching_projector_is_paired_as_a_required_vision_component() {
+        let (companions, orphans) = pair_companions(
+            "Qwen3.8-27B-Q4.gguf",
+            ["mmproj-Qwen3.8-27B-Q8_0.gguf", "README.md"],
+        );
+
+        assert_eq!(companions.len(), 1);
+        assert_eq!(companions[0].provides, Modality::Vision);
+        assert!(
+            companions[0].required,
+            "a vision model cannot answer without its encoder"
+        );
+        assert!(orphans.is_empty());
+    }
+
+    #[test]
+    fn an_unrelated_projector_is_reported_as_an_orphan_not_attached() {
+        let (companions, orphans) =
+            pair_companions("llama-3-8B.gguf", ["mmproj-qwen2vl-7b-f16.gguf"]);
+
+        assert!(
+            companions.is_empty(),
+            "attaching an unrelated projector would be a silent mismatch"
+        );
+        assert_eq!(orphans, vec!["mmproj-qwen2vl-7b-f16.gguf"]);
+    }
+
+    #[test]
+    fn a_plain_text_model_has_no_companions() {
+        let (companions, orphans) =
+            pair_companions("stories260K.gguf", ["stories260K.gguf", "config.json"]);
+        assert!(companions.is_empty());
+        assert!(orphans.is_empty());
+    }
+
+    #[test]
+    fn pairing_is_deterministic() {
+        let inputs = ["mmproj-qwen-2-q8_0.gguf", "mmproj-qwen-2-f16.gguf"];
+        let (first, _) = pair_companions("qwen-2.gguf", inputs);
+        let (second, _) = pair_companions("qwen-2.gguf", inputs);
+        assert_eq!(first, second);
+        assert_eq!(first.len(), 2);
+        assert!(
+            first[0].path < first[1].path,
+            "companions are sorted so the manifest is stable"
+        );
+    }
+}

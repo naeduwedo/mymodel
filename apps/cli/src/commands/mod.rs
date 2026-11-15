@@ -6,12 +6,14 @@ mod doctor;
 mod hardware;
 mod inspect;
 mod memory;
+mod modalities;
 mod models;
 mod overview;
 mod plan;
 mod runtimes;
 mod serve;
 mod version;
+mod vision;
 
 use std::path::{Path, PathBuf};
 
@@ -24,12 +26,14 @@ pub use doctor::doctor;
 pub use hardware::hardware;
 pub use inspect::inspect;
 pub use memory::memory;
+pub use modalities::modalities_cmd;
 pub use models::{list, pull, search};
 pub use overview::overview;
 pub use plan::plan_cmd;
 pub use runtimes::runtimes;
 pub use serve::serve;
 pub use version::version;
+pub use vision::vision;
 
 /// Resolved environment shared by every command.
 #[derive(Debug)]

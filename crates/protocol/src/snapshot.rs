@@ -95,7 +95,8 @@ pub fn feature_label(id: &str) -> &str {
         "runtime_llama_cpp" => "llama.cpp runtime",
         "multi_gpu_scheduling" => "Multi-GPU scheduling",
         "memory_paging" => "Memory paging",
-        "multimodal" => "Multimodal runtimes",
+        "vision" => "Vision (image in)",
+        "multimodal_other" => "Image / video / audio / music",
         "http_api" => "HTTP / OpenAI API",
         other => other,
     }

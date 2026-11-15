@@ -12,9 +12,11 @@
 #![warn(missing_docs)]
 
 pub mod adapter;
+pub mod modality;
 pub mod types;
 
 pub use adapter::{BoxedAdapter, LoadPlan, MemoryEstimate, RuntimeAdapter, TokenStream};
+pub use modality::{Modality, ModalityStatus, ModalitySupport, modalities, supports};
 pub use types::{
     Capability, CapabilityStatus, ChatMessage, ChatRequest, RuntimeCapabilities, RuntimeError,
     RuntimeInstance, Token,

@@ -117,6 +117,26 @@ enum Command {
     },
     /// Show the VRAM / RAM / NVMe tier picture.
     Memory,
+    /// List every modality and whether this build supports it.
+    Modalities,
+    /// Describe an image with a multimodal model.
+    Vision {
+        /// Base model weights.
+        #[arg(long, value_name = "GGUF")]
+        model: String,
+        /// The mmproj companion carrying the vision encoder.
+        #[arg(long, value_name = "GGUF")]
+        mmproj: String,
+        /// Image to describe.
+        #[arg(long, value_name = "FILE")]
+        image: PathBuf,
+        /// Question about the image.
+        #[arg(short, long, default_value = "Describe this image.")]
+        prompt: String,
+        /// Maximum tokens to generate.
+        #[arg(long, default_value_t = 128)]
+        max_tokens: u32,
+    },
     /// Run a streaming chat completion through a local runtime.
     Chat {
         /// Path to the GGUF model file.
@@ -288,6 +308,28 @@ async fn run(cli: Cli) -> Result<ExitCode> {
         }
         Command::Memory => {
             let ok = commands::memory(&ctx, cli.json)?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Modalities => {
+            let ok = commands::modalities_cmd(cli.json)?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Vision {
+            model,
+            mmproj,
+            image,
+            prompt,
+            max_tokens,
+        } => {
+            let ok = commands::vision(&model, &mmproj, &image, &prompt, max_tokens)?;
             Ok(if ok {
                 ExitCode::SUCCESS
             } else {

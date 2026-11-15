@@ -99,10 +99,13 @@ pub fn features() -> Vec<Feature> {
         // Task 7: the planner, the lease ledger and the three-tier memory model.
         Feature::new("multi_gpu_scheduling", FeatureStatus::Supported, None),
         Feature::new("memory_paging", FeatureStatus::Supported, None),
+        // Task 8: vision is real; the other modalities are listed by
+        // gguf_engine_runtime_manager::modalities() with their own reasons.
+        Feature::new("vision", FeatureStatus::Supported, None),
         Feature::new(
-            "multimodal",
+            "multimodal_other",
             FeatureStatus::Planned,
-            Some("Task 8: no multimodal runtime adapter exists".to_owned()),
+            Some("image generation, video, audio and music have no runtime adapter yet".to_owned()),
         ),
         Feature::new(
             "http_api",
@@ -178,7 +181,8 @@ mod tests {
                 "model_download",
                 "runtime_llama_cpp",
                 "multi_gpu_scheduling",
-                "memory_paging"
+                "memory_paging",
+                "vision"
             ],
             "advertising a capability before it exists violates spec rule 4"
         );

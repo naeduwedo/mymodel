@@ -15,6 +15,8 @@ pub mod adapter;
 pub mod client;
 pub mod probe;
 pub mod process;
+pub mod vision;
 
 pub use adapter::LlamaCppAdapter;
 pub use probe::{BINARY_ENV, DEFAULT_SEARCH_DIRS, ProbeResult, locate};
+pub use vision::{VisionRequest, describe, locate_mtmd};
