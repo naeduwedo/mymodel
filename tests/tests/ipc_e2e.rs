@@ -51,7 +51,27 @@ fn bin(name: &str) -> PathBuf {
     panic!("could not find {exe}; looked in {looked:?}");
 }
 
+/// A port the OS says is free right now.
+///
+/// The gateway defaults to the fixed port 18888 and rejects 0 as a configuration
+/// value, so parallel test daemons need distinct, known ports. Binding to port 0
+/// asks the OS, and the listener is dropped immediately: the window before the
+/// daemon binds is small, and a collision fails loudly rather than silently.
+fn free_port() -> u16 {
+    std::net::TcpListener::bind("127.0.0.1:0")
+        .and_then(|listener| listener.local_addr())
+        .map(|addr| addr.port())
+        .expect("a free loopback port")
+}
+
 fn start_daemon(data_root: &Path) -> Daemon {
+    // Parallel tests each need their own gateway port; see `free_port`.
+    std::fs::write(
+        data_root.join(gguf_engine_config::CONFIG_FILE_NAME),
+        format!("[core]\napi_port = {}\n", free_port()),
+    )
+    .expect("writing a test config");
+
     let child = Command::new(bin("gguf-core"))
         .arg("--data-dir")
         .arg(data_root)
