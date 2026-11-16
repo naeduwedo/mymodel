@@ -502,7 +502,7 @@ async fn run(cli: Cli) -> Result<ExitCode> {
                 out,
                 duration_seconds: duration,
             };
-            let ok = commands::music(&ctx, &prompt, options, cli.json)?;
+            let ok = commands::music(&ctx, &prompt, options, cli.json).await?;
             Ok(if ok {
                 ExitCode::SUCCESS
             } else {

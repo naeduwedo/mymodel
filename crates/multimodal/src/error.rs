@@ -11,6 +11,13 @@ pub enum MultimodalError {
     #[error("{0}")]
     NotAvailable(String),
 
+    /// The caller asked to stop before the work finished.
+    ///
+    /// Distinct from `Runtime`: nothing went wrong, so the message must not read
+    /// like a failure.
+    #[error("the render was cancelled")]
+    Cancelled,
+
     /// The runtime was found but the call failed.
     #[error("{0}")]
     Runtime(String),

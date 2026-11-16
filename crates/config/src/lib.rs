@@ -84,6 +84,12 @@ pub struct MultimodalConfig {
     /// Music model *directory* for audio.cpp (it resolves components inside).
     #[serde(default)]
     pub music_model: Option<String>,
+    /// Speech model *directory* for audio.cpp (GGUF speech).
+    ///
+    /// Setting this switches synthesis from Piper to the GGUF runtime; leaving it
+    /// unset keeps Piper.
+    #[serde(default)]
+    pub tts_model: Option<String>,
     /// Backend for audio.cpp: `cpu` or `cuda`.
     ///
     /// The pair matters: a q8_0 package on CUDA aborts inside ggml's MMQ kernel on

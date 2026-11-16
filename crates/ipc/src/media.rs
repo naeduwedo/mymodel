@@ -33,6 +33,7 @@ impl MediaService {
                 config.asr_model.clone(),
                 config.tts_voice.clone(),
                 config.music_model.clone(),
+                config.tts_model.clone(),
                 config.audio_backend.clone(),
             ),
         }
@@ -50,6 +51,8 @@ impl MediaService {
             gguf_engine_multimodal::MultimodalError::NotAvailable(message) => {
                 Status::failed_precondition(message)
             }
+            // A cancellation is the caller's own doing, so it is not a fault.
+            gguf_engine_multimodal::MultimodalError::Cancelled => Status::cancelled("cancelled"),
             gguf_engine_multimodal::MultimodalError::Runtime(message) => Status::internal(message),
         }
     }
@@ -64,6 +67,14 @@ enum JobEvent {
     Progress(gguf_engine_multimodal::VideoProgress),
     Finished(
         Result<gguf_engine_multimodal::GeneratedVideo, gguf_engine_multimodal::MultimodalError>,
+    ),
+}
+
+/// How a music render event reaches the caller.
+enum MusicEvent {
+    Progress(gguf_engine_multimodal::MusicProgress),
+    Finished(
+        Result<gguf_engine_multimodal::GeneratedAudio, gguf_engine_multimodal::MultimodalError>,
     ),
 }
 
@@ -156,20 +167,25 @@ impl pb::media_service_server::MediaService for MediaService {
         // event per poll interval (seconds), so a slow consumer cannot grow the
         // queue without bound in any realistic render.
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<JobEvent>();
+        let cancel = gguf_engine_multimodal::CancelHandle::new();
 
-        tokio::spawn(async move {
-            let result = engine
-                .video_with_progress(&video, |progress| {
-                    // A closed receiver means the caller went away; the send
-                    // simply fails and the render is left to finish or fail on
-                    // its own.
-                    let _ = tx.send(JobEvent::Progress(progress));
-                })
-                .await;
-            let _ = tx.send(JobEvent::Finished(result));
+        tokio::spawn({
+            let cancel = cancel.clone();
+            async move {
+                let result = engine
+                    .video_cancellable(&video, &cancel, |progress| {
+                        // A closed receiver means the caller went away; the send
+                        // simply fails and the guard below stops the render.
+                        let _ = tx.send(JobEvent::Progress(progress));
+                    })
+                    .await;
+                let _ = tx.send(JobEvent::Finished(result));
+            }
         });
 
         let stream = async_stream::stream! {
+            // Dropping the stream (the client hung up) stops the render.
+            let _guard = gguf_engine_multimodal::CancelOnDrop(cancel);
             while let Some(event) = rx.recv().await {
                 match event {
                     JobEvent::Progress(progress) => {
@@ -237,10 +253,13 @@ impl pb::media_service_server::MediaService for MediaService {
         Ok(Response::new(pb::SpeechReply { wav: speech.wav }))
     }
 
+    type GenerateMusicStream =
+        Pin<Box<dyn Stream<Item = Result<pb::MusicProgressEvent, Status>> + Send>>;
+
     async fn generate_music(
         &self,
         request: Request<pb::MusicRequest>,
-    ) -> Result<Response<pb::MusicReply>, Status> {
+    ) -> Result<Response<Self::GenerateMusicStream>, Status> {
         let request = request.into_inner();
 
         let mut music = gguf_engine_multimodal::MusicRequest::new(&request.prompt);
@@ -248,19 +267,66 @@ impl pb::media_service_server::MediaService for MediaService {
             music.duration_seconds = request.duration_seconds;
         }
 
-        // The runtime is a CLI that blocks for the whole render, so it runs off
-        // the reactor rather than stalling every other request.
         let engine = self.engine.clone();
-        let generated = tokio::task::spawn_blocking(move || engine.music(&music))
-            .await
-            .map_err(|error| Status::internal(format!("the music task failed: {error}")))
-            .and_then(|result| result.map_err(Self::status))?;
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<MusicEvent>();
+        let cancel = gguf_engine_multimodal::CancelHandle::new();
 
-        Ok(Response::new(pb::MusicReply {
-            wav: generated.wav,
-            sample_rate: generated.sample_rate,
-            channels: generated.channels,
-        }))
+        // The runtime is a CLI that blocks for the whole render, so it runs on a
+        // blocking thread and reports through the channel.
+        tokio::task::spawn_blocking({
+            let cancel = cancel.clone();
+            move || {
+                let result = engine.music_cancellable(&music, &cancel, |progress| {
+                    let _ = tx.send(MusicEvent::Progress(progress));
+                });
+                let _ = tx.send(MusicEvent::Finished(result));
+            }
+        });
+
+        let stream = async_stream::stream! {
+            // Dropping the stream (the client hung up) kills the child process.
+            let _guard = gguf_engine_multimodal::CancelOnDrop(cancel);
+            while let Some(event) = rx.recv().await {
+                match event {
+                    MusicEvent::Progress(progress) => {
+                        yield Ok(pb::MusicProgressEvent {
+                            stage: progress.stage,
+                            detail: progress.detail,
+                            elapsed_ms: progress.elapsed_ms,
+                            audio: None,
+                            error: None,
+                        });
+                    }
+                    MusicEvent::Finished(Ok(generated)) => {
+                        yield Ok(pb::MusicProgressEvent {
+                            stage: "done".to_owned(),
+                            detail: String::new(),
+                            elapsed_ms: 0,
+                            audio: Some(pb::MusicReply {
+                                wav: generated.wav,
+                                sample_rate: generated.sample_rate,
+                                channels: generated.channels,
+                            }),
+                            error: None,
+                        });
+                        return;
+                    }
+                    MusicEvent::Finished(Err(error)) => {
+                        warn!(error = %error, "music generation failed");
+                        yield Ok(pb::MusicProgressEvent {
+                            stage: "failed".to_owned(),
+                            detail: String::new(),
+                            elapsed_ms: 0,
+                            audio: None,
+                            error: Some(error.to_string()),
+                        });
+                        return;
+                    }
+                }
+            }
+        };
+
+        Ok(Response::new(Box::pin(stream) as Self::GenerateMusicStream))
     }
 
     async fn transcribe(

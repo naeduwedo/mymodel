@@ -15,6 +15,7 @@
 
 #![warn(missing_docs)]
 
+pub mod cancel;
 pub mod engine;
 pub mod error;
 pub mod image;
@@ -23,18 +24,24 @@ pub mod modality;
 pub mod music;
 pub mod probe;
 pub mod speech;
+pub mod tts;
 pub mod video;
 
+pub use cancel::{CancelHandle, CancelOnDrop};
 pub use engine::{MediaEngine, runtime_binary};
 pub use error::MultimodalError;
 pub use image::{GeneratedImage, ImageRequest, generate as generate_image};
 pub use manifest::{Invocation, RuntimeKind, RuntimeManifest, builtin_manifests};
 pub use modality::{ModalityReport, ModalityState, modality_report};
-pub use music::{AudioBackend, GeneratedAudio, MusicRequest, generate as generate_music};
+pub use music::{
+    AudioBackend, GeneratedAudio, MusicProgress, MusicRequest, generate as generate_music,
+    generate_with_progress as generate_music_with_progress,
+};
 pub use probe::{
     RUNTIME_ENV, RuntimeProbe, http_base, locate, probe, probe_all, runtime_for, search_dirs,
 };
 pub use speech::{Speech, Transcription, clean_transcript, synthesise, transcribe};
+pub use tts::{SpeechRequest, synthesise as synthesise_speech};
 pub use video::{
     GeneratedVideo, VideoProgress, VideoRequest, generate as generate_video,
     generate_with_progress as generate_video_with_progress,

@@ -438,16 +438,33 @@ public sealed partial class MainWindow : Window
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
             deadline.CancelAfter(TimeSpan.FromMinutes(15));
 
-            var reply = await _client.GenerateMusicAsync(
+            await foreach (var progress in _client.GenerateMusicAsync(
                 prompt,
                 (uint)MusicDurationBox.Value,
-                deadline.Token);
+                deadline.Token))
+            {
+                if (progress.Audio is { } audio)
+                {
+                    var path = Path.Combine(Path.GetTempPath(), $"gguf-music-{DateTime.Now:HHmmss}.wav");
+                    await File.WriteAllBytesAsync(
+                        path,
+                        audio.Wav.ToByteArray(),
+                        CancellationToken.None);
 
-            var path = Path.Combine(Path.GetTempPath(), $"gguf-music-{DateTime.Now:HHmmss}.wav");
-            await File.WriteAllBytesAsync(path, reply.Wav.ToByteArray(), CancellationToken.None);
-
-            MusicStatus.Text =
-                $"Wrote {reply.Wav.Length / 1024} KiB ({reply.SampleRate} Hz, {reply.Channels} ch) to {path}";
+                    MusicStatus.Text =
+                        $"Wrote {audio.Wav.Length / 1024} KiB ({audio.SampleRate} Hz, {audio.Channels} ch) to {path}";
+                }
+                else if (progress.HasError)
+                {
+                    MusicStatus.Text = "Failed.";
+                    ShowCreateMessage(InfoBarSeverity.Error, "Music generation failed", progress.Error);
+                }
+                else
+                {
+                    // The runtime's own stage, not a made-up percentage.
+                    MusicStatus.Text = $"{progress.Stage} ({progress.ElapsedMs / 1000.0:0.0}s)";
+                }
+            }
         }
         catch (Exception ex)
         {

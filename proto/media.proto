@@ -103,6 +103,24 @@ message MusicReply {
   uint32 channels = 3;
 }
 
+// One step of a music or sound-effect render.
+//
+// The runtime exposes stages (prompt encoding, diffusion, waveform decoding) but
+// no step counter, so this reports the stage and elapsed time rather than a
+// percentage that would be a guess.
+message MusicProgressEvent {
+  // Coarse stage a user can read.
+  string stage = 1;
+  // The runtime's own key, e.g. "stable_audio.rf_dit".
+  string detail = 2;
+  // Milliseconds since the render started.
+  uint64 elapsed_ms = 3;
+  // Set only on the final event, which always ends the stream.
+  optional MusicReply audio = 4;
+  // Set only when the render failed.
+  optional string error = 5;
+}
+
 service MediaService {
   // Image generation. FAILED_PRECONDITION when no diffusion runtime is available.
   rpc GenerateImage(ImageRequest) returns (ImageReply);
@@ -113,6 +131,7 @@ service MediaService {
   rpc Synthesise(SpeechRequest) returns (SpeechReply);
   // Speech recognition.
   rpc Transcribe(TranscriptionRequest) returns (TranscriptionReply);
-  // Music or sound-effect generation. Seconds to a couple of minutes.
-  rpc GenerateMusic(MusicRequest) returns (MusicReply);
+  // Music or sound-effect generation. Seconds to a couple of minutes, so it
+  // streams stages and ends with the audio (or an error).
+  rpc GenerateMusic(MusicRequest) returns (stream MusicProgressEvent);
 }

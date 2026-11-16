@@ -210,22 +210,24 @@ public sealed class CoreClient : IDisposable
         return reply.Wav.ToByteArray();
     }
 
-    /// <summary>Generate music or a sound effect, returning WAV bytes.</summary>
+    /// <summary>Generate music, yielding stages as the runtime advances.</summary>
     /// <remarks>
-    /// Blocks for the render: seconds to a couple of minutes. The runtime is a
-    /// one-shot CLI, so there is no progress channel to subscribe to.
+    /// The stream ends after exactly one event carrying the WAV, or one carrying
+    /// an error. The runtime reports stages but no step counter, so callers get
+    /// "generating audio" rather than a percentage.
     /// </remarks>
-    public async Task<MusicReply> GenerateMusicAsync(
+    public IAsyncEnumerable<MusicProgressEvent> GenerateMusicAsync(
         string prompt,
         uint durationSeconds,
         CancellationToken cancellationToken = default)
     {
         var media = new MediaService.MediaServiceClient(_channel);
-        return await media
-            .GenerateMusicAsync(
+        return media
+            .GenerateMusic(
                 new MusicRequest { Prompt = prompt, DurationSeconds = durationSeconds },
                 cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+            .ResponseStream
+            .ReadAllAsync(cancellationToken);
     }
 
     /// <summary>Transcribe an audio file.</summary>

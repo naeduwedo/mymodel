@@ -94,6 +94,12 @@ impl VideoProgress {
     }
 }
 
+/// How long to wait for the runtime to acknowledge a stop.
+///
+/// One sampling step of a heavy clip took about 30 s here, so this is generous
+/// enough not to give up while the runtime is genuinely winding down.
+const STOP_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(180);
+
 /// How long to wait between polls.
 const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_secs(2);
 
@@ -108,6 +114,7 @@ pub const VIDEO_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(36
 pub async fn generate_with_progress<F>(
     base_url: &str,
     request: &VideoRequest,
+    cancel: &crate::cancel::CancelHandle,
     mut on_progress: F,
 ) -> Result<GeneratedVideo, MultimodalError>
 where
@@ -197,6 +204,24 @@ where
             .unwrap_or("unknown")
             .to_owned();
 
+        // A user who asked to stop gets the runtime told to stop as well, rather
+        // than leaving a GPU busy on a clip nobody wants.
+        //
+        // The runtime only honours this at a sampling-step boundary, and one step
+        // of a heavy clip can take tens of seconds, so returning the moment the
+        // request is acknowledged would report a stop that has not happened.
+        if cancel.is_cancelled() {
+            let _ = client
+                .post(format!(
+                    "{}/sdcpp/v1/jobs/{job_id}/cancel",
+                    base_url.trim_end_matches('/')
+                ))
+                .send()
+                .await;
+            wait_for_stop(&client, base_url, job_id).await;
+            return Err(MultimodalError::Cancelled);
+        }
+
         on_progress(read_progress(&job, &status));
 
         match status.as_str() {
@@ -208,6 +233,35 @@ where
                 )));
             }
             // queued and running are both "keep waiting".
+            _ => continue,
+        }
+    }
+}
+
+/// Wait until the runtime reports the job stopped.
+///
+/// Bounded: if the runtime never acknowledges, the caller still gets their stop
+/// rather than hanging forever, and the message says the runtime may still be
+/// finishing its current step.
+async fn wait_for_stop(client: &reqwest::Client, base_url: &str, job_id: &str) {
+    let deadline = tokio::time::Instant::now() + STOP_TIMEOUT;
+    while tokio::time::Instant::now() < deadline {
+        tokio::time::sleep(POLL_INTERVAL).await;
+        let Ok(response) = client
+            .get(format!(
+                "{}/sdcpp/v1/jobs/{job_id}",
+                base_url.trim_end_matches('/')
+            ))
+            .send()
+            .await
+        else {
+            continue;
+        };
+        let Ok(job) = response.json::<serde_json::Value>().await else {
+            continue;
+        };
+        match job.get("status").and_then(|value| value.as_str()) {
+            Some("cancelled" | "failed" | "completed") => return,
             _ => continue,
         }
     }
@@ -252,7 +306,13 @@ pub async fn generate(
     base_url: &str,
     request: &VideoRequest,
 ) -> Result<GeneratedVideo, MultimodalError> {
-    generate_with_progress(base_url, request, |_| {}).await
+    generate_with_progress(
+        base_url,
+        request,
+        &crate::cancel::CancelHandle::new(),
+        |_| {},
+    )
+    .await
 }
 
 /// Pull the clip out of a completed job.

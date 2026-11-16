@@ -64,7 +64,7 @@ namespace Gguf.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Gguf.V1.MusicRequest> __Marshaller_gguf_v1_MusicRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.MusicRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Marshaller<global::Gguf.V1.MusicReply> __Marshaller_gguf_v1_MusicReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.MusicReply.Parser));
+    static readonly grpc::Marshaller<global::Gguf.V1.MusicProgressEvent> __Marshaller_gguf_v1_MusicProgressEvent = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.MusicProgressEvent.Parser));
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::Gguf.V1.ImageRequest, global::Gguf.V1.ImageReply> __Method_GenerateImage = new grpc::Method<global::Gguf.V1.ImageRequest, global::Gguf.V1.ImageReply>(
@@ -99,12 +99,12 @@ namespace Gguf.V1 {
         __Marshaller_gguf_v1_TranscriptionReply);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Method<global::Gguf.V1.MusicRequest, global::Gguf.V1.MusicReply> __Method_GenerateMusic = new grpc::Method<global::Gguf.V1.MusicRequest, global::Gguf.V1.MusicReply>(
-        grpc::MethodType.Unary,
+    static readonly grpc::Method<global::Gguf.V1.MusicRequest, global::Gguf.V1.MusicProgressEvent> __Method_GenerateMusic = new grpc::Method<global::Gguf.V1.MusicRequest, global::Gguf.V1.MusicProgressEvent>(
+        grpc::MethodType.ServerStreaming,
         __ServiceName,
         "GenerateMusic",
         __Marshaller_gguf_v1_MusicRequest,
-        __Marshaller_gguf_v1_MusicReply);
+        __Marshaller_gguf_v1_MusicProgressEvent);
 
     /// <summary>Service descriptor</summary>
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
@@ -310,52 +310,30 @@ namespace Gguf.V1 {
         return CallInvoker.AsyncUnaryCall(__Method_Transcribe, null, options, request);
       }
       /// <summary>
-      /// Music or sound-effect generation. Seconds to a couple of minutes.
+      /// Music or sound-effect generation. Seconds to a couple of minutes, so it
+      /// streams stages and ends with the audio (or an error).
       /// </summary>
       /// <param name="request">The request to send to the server.</param>
       /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
       /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
       /// <param name="cancellationToken">An optional token for canceling the call.</param>
-      /// <returns>The response received from the server.</returns>
+      /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Gguf.V1.MusicReply GenerateMusic(global::Gguf.V1.MusicRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncServerStreamingCall<global::Gguf.V1.MusicProgressEvent> GenerateMusic(global::Gguf.V1.MusicRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
         return GenerateMusic(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
-      /// Music or sound-effect generation. Seconds to a couple of minutes.
-      /// </summary>
-      /// <param name="request">The request to send to the server.</param>
-      /// <param name="options">The options for the call.</param>
-      /// <returns>The response received from the server.</returns>
-      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Gguf.V1.MusicReply GenerateMusic(global::Gguf.V1.MusicRequest request, grpc::CallOptions options)
-      {
-        return CallInvoker.BlockingUnaryCall(__Method_GenerateMusic, null, options, request);
-      }
-      /// <summary>
-      /// Music or sound-effect generation. Seconds to a couple of minutes.
-      /// </summary>
-      /// <param name="request">The request to send to the server.</param>
-      /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
-      /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
-      /// <param name="cancellationToken">An optional token for canceling the call.</param>
-      /// <returns>The call object.</returns>
-      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Gguf.V1.MusicReply> GenerateMusicAsync(global::Gguf.V1.MusicRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
-      {
-        return GenerateMusicAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
-      }
-      /// <summary>
-      /// Music or sound-effect generation. Seconds to a couple of minutes.
+      /// Music or sound-effect generation. Seconds to a couple of minutes, so it
+      /// streams stages and ends with the audio (or an error).
       /// </summary>
       /// <param name="request">The request to send to the server.</param>
       /// <param name="options">The options for the call.</param>
       /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Gguf.V1.MusicReply> GenerateMusicAsync(global::Gguf.V1.MusicRequest request, grpc::CallOptions options)
+      public virtual grpc::AsyncServerStreamingCall<global::Gguf.V1.MusicProgressEvent> GenerateMusic(global::Gguf.V1.MusicRequest request, grpc::CallOptions options)
       {
-        return CallInvoker.AsyncUnaryCall(__Method_GenerateMusic, null, options, request);
+        return CallInvoker.AsyncServerStreamingCall(__Method_GenerateMusic, null, options, request);
       }
       /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]

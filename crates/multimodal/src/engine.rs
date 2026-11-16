@@ -28,6 +28,8 @@ pub struct MediaEngine {
     pub tts_voice: Option<PathBuf>,
     /// Music model directory for audio.cpp.
     pub music_model: Option<PathBuf>,
+    /// Speech model directory for audio.cpp, when GGUF speech is chosen.
+    pub tts_model: Option<PathBuf>,
     /// Backend audio.cpp should use.
     pub audio_backend: AudioBackend,
 }
@@ -40,6 +42,7 @@ impl MediaEngine {
         asr_model: Option<String>,
         tts_voice: Option<String>,
         music_model: Option<String>,
+        tts_model: Option<String>,
         audio_backend: Option<String>,
     ) -> Self {
         let configured_base = diffusion_url
@@ -69,6 +72,7 @@ impl MediaEngine {
             asr_model: non_empty(asr_model),
             tts_voice: non_empty(tts_voice),
             music_model: non_empty(music_model),
+            tts_model: non_empty(tts_model),
             // An unrecognised value falls back to the default rather than failing:
             // a typo in a backend name should not make the product unusable.
             audio_backend: match audio_backend.as_deref() {
@@ -121,6 +125,20 @@ impl MediaEngine {
     where
         F: FnMut(VideoProgress),
     {
+        self.video_cancellable(request, &crate::cancel::CancelHandle::new(), on_progress)
+            .await
+    }
+
+    /// Generate a clip that can be stopped from outside.
+    pub async fn video_cancellable<F>(
+        &self,
+        request: &VideoRequest,
+        cancel: &crate::cancel::CancelHandle,
+        on_progress: F,
+    ) -> Result<GeneratedVideo, MultimodalError>
+    where
+        F: FnMut(VideoProgress),
+    {
         let base = self
             .diffusion_base
             .as_ref()
@@ -128,11 +146,26 @@ impl MediaEngine {
         if self.image_model.is_none() {
             return Err(Self::unavailable("video"));
         }
-        crate::video::generate_with_progress(base, request, on_progress).await
+        crate::video::generate_with_progress(base, request, cancel, on_progress).await
     }
 
     /// Synthesise speech.
+    ///
+    /// Uses the GGUF runtime when a speech model directory is configured, and
+    /// Piper otherwise. A GGUF model directory is the only thing that selects it,
+    /// so there is no second setting that can disagree with the first.
     pub fn speech(&self, text: &str) -> Result<Speech, MultimodalError> {
+        if let Some(model) = self.tts_model.as_ref() {
+            let binary = runtime_binary("music")?;
+            let wav = crate::tts::synthesise(
+                &binary,
+                model,
+                &crate::tts::SpeechRequest::new(text),
+                self.audio_backend,
+            )?;
+            return Ok(Speech { wav });
+        }
+
         let voice = self
             .tts_voice
             .as_ref()
@@ -143,12 +176,44 @@ impl MediaEngine {
 
     /// Generate music.
     pub fn music(&self, request: &MusicRequest) -> Result<GeneratedAudio, MultimodalError> {
+        self.music_with_progress(request, |_| {})
+    }
+
+    /// Generate music, reporting the runtime's stages as they happen.
+    pub fn music_with_progress<F>(
+        &self,
+        request: &MusicRequest,
+        on_progress: F,
+    ) -> Result<GeneratedAudio, MultimodalError>
+    where
+        F: FnMut(crate::music::MusicProgress),
+    {
+        self.music_cancellable(request, &crate::cancel::CancelHandle::new(), on_progress)
+    }
+
+    /// Generate music that can be stopped from outside.
+    pub fn music_cancellable<F>(
+        &self,
+        request: &MusicRequest,
+        cancel: &crate::cancel::CancelHandle,
+        on_progress: F,
+    ) -> Result<GeneratedAudio, MultimodalError>
+    where
+        F: FnMut(crate::music::MusicProgress),
+    {
         let model = self
             .music_model
             .as_ref()
             .ok_or_else(|| Self::unavailable("music"))?;
         let binary = runtime_binary("music")?;
-        crate::music::generate(&binary, model, request, self.audio_backend)
+        crate::music::generate_with_progress(
+            &binary,
+            model,
+            request,
+            self.audio_backend,
+            cancel,
+            on_progress,
+        )
     }
 
     /// Transcribe an audio file.
@@ -194,7 +259,7 @@ mod tests {
 
     #[test]
     fn blank_paths_are_treated_as_absent() {
-        let engine = MediaEngine::new(Some("  ".to_owned()), None, None, None, None, None);
+        let engine = MediaEngine::new(Some("  ".to_owned()), None, None, None, None, None, None);
         assert!(engine.image_model.is_none());
     }
 
@@ -202,6 +267,7 @@ mod tests {
     fn a_real_path_is_kept() {
         let engine = MediaEngine::new(
             Some("C:/models/x.gguf".to_owned()),
+            None,
             None,
             None,
             None,

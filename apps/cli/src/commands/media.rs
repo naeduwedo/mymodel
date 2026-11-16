@@ -166,8 +166,24 @@ pub async fn video(ctx: &Context, prompt: &str, options: VideoOptions, json: boo
     // stdout, and so a piped caller is not given a stream of percentages.
     let mut last_line = String::new();
     let mut last_key = String::new();
-    let generated =
-        gguf_engine_multimodal::generate_video_with_progress(&base, &request, |progress| {
+    // Ctrl-C asks the runtime to stop, instead of leaving a GPU busy on a clip
+    // nobody is waiting for any more.
+    let cancel = gguf_engine_multimodal::CancelHandle::new();
+    let watchdog = tokio::spawn({
+        let cancel = cancel.clone();
+        async move {
+            if tokio::signal::ctrl_c().await.is_ok() {
+                eprintln!("\nnote     : stopping the render");
+                cancel.cancel();
+            }
+        }
+    });
+
+    let generated = gguf_engine_multimodal::generate_video_with_progress(
+        &base,
+        &request,
+        &cancel,
+        |progress: gguf_engine_multimodal::VideoProgress| {
             // Only rewrite when the stage or the step count changes. The elapsed time
             // changes on every poll, so including it in the comparison would emit a
             // line per second - harmless in a terminal, noise in a redirected log.
@@ -182,9 +198,11 @@ pub async fn video(ctx: &Context, prompt: &str, options: VideoOptions, json: boo
                 last_line = line;
                 last_key = key;
             }
-        })
-        .await
-        .map_err(describe)?;
+        },
+    )
+    .await;
+    watchdog.abort();
+    let generated = generated.map_err(describe)?;
 
     if !json && !last_line.is_empty() {
         eprintln!();
@@ -275,7 +293,7 @@ pub struct ImageOptions {
 /// Runs on the ggml audio runtime (`audio.cpp`): GGUF weights, no Python and no
 /// ComfyUI. The call blocks for the render, which is seconds to a couple of
 /// minutes depending on length and backend.
-pub fn music(ctx: &Context, prompt: &str, options: MusicOptions, json: bool) -> Result<bool> {
+pub async fn music(ctx: &Context, prompt: &str, options: MusicOptions, json: bool) -> Result<bool> {
     let probe = runtime_for("music")?;
     let binary = probe
         .path
@@ -305,8 +323,57 @@ pub fn music(ctx: &Context, prompt: &str, options: MusicOptions, json: bool) -> 
         eprintln!("request  : {} s", request.duration_seconds);
     }
 
-    let generated = gguf_engine_multimodal::generate_music(binary, &model, &request, backend)
-        .map_err(describe)?;
+    // One line per stage, on stderr, so `--json` stays a single document.
+    let cancel = gguf_engine_multimodal::CancelHandle::new();
+    // Shared with the worker thread, which is the one that sees the stages.
+    let printed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+    // The runtime is a blocking child process, so it runs on a blocking thread
+    // while this one watches for Ctrl-C.
+    let binary = binary.to_path_buf();
+    let worker = {
+        let cancel = cancel.clone();
+        let request = request.clone();
+        let printed = std::sync::Arc::clone(&printed);
+        tokio::task::spawn_blocking(move || {
+            let mut last_stage = String::new();
+            gguf_engine_multimodal::generate_music_with_progress(
+                &binary,
+                &model,
+                &request,
+                backend,
+                &cancel,
+                |progress: gguf_engine_multimodal::MusicProgress| {
+                    if progress.stage != last_stage {
+                        eprint!(
+                            "\r{} ({:.1}s)",
+                            progress.stage,
+                            progress.elapsed_ms as f64 / 1000.0
+                        );
+                        last_stage = progress.stage;
+                        printed.store(true, std::sync::atomic::Ordering::SeqCst);
+                    }
+                },
+            )
+        })
+    };
+
+    let generated = tokio::select! {
+        result = worker => result
+            .map_err(|err| anyhow::anyhow!("the music task failed: {err}"))?,
+        _ = tokio::signal::ctrl_c() => {
+            eprintln!("\nnote     : stopping the render");
+            cancel.cancel();
+            // Give the worker a moment to kill the child and report.
+            tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+            anyhow::bail!("cancelled")
+        }
+    }
+    .map_err(describe)?;
+
+    if !json && printed.load(std::sync::atomic::Ordering::SeqCst) {
+        eprintln!();
+    }
 
     if let Some(parent) = options.out.parent() {
         std::fs::create_dir_all(parent).ok();
@@ -383,28 +450,54 @@ pub fn transcribe_audio(
 
 /// `gguf speak` — text to speech.
 pub fn speak(ctx: &Context, text: &str, out: &Path, json: bool) -> Result<bool> {
-    let probe = runtime_for("tts")?;
-    let binary = probe
-        .path
-        .as_deref()
-        .context("the TTS runtime has no path")?;
-    let voice = require_path("tts_voice", ctx.config.multimodal.tts_voice.as_ref())?;
+    // A speech model directory selects the GGUF runtime; otherwise Piper. The
+    // same rule as `MediaEngine::speech`, so the CLI and the shells cannot
+    // disagree about which one runs.
+    let wav = match ctx.config.multimodal.tts_model.as_ref() {
+        Some(dir) if !dir.trim().is_empty() => {
+            let model = require_dir("tts_model", Some(dir))?;
+            let engine = gguf_engine_multimodal::MediaEngine::new(
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(model.display().to_string()),
+                ctx.config.multimodal.audio_backend.clone(),
+            );
+            let probe = runtime_for("music")?;
+            if !json {
+                eprintln!("runtime  : {} (GGUF)", probe.manifest.display_name);
+                eprintln!("model    : {}", model.display());
+            }
+            let speech = engine.speech(text).map_err(describe)?;
+            speech.wav
+        }
+        _ => {
+            let probe = runtime_for("tts")?;
+            let binary = probe
+                .path
+                .as_deref()
+                .context("the TTS runtime has no path")?;
+            let voice = require_path("tts_voice", ctx.config.multimodal.tts_voice.as_ref())?;
 
-    if !json {
-        eprintln!(
-            "runtime  : {} ({})",
-            probe.manifest.display_name,
-            binary.display()
-        );
-        eprintln!("voice    : {}", voice.display());
-    }
+            if !json {
+                eprintln!(
+                    "runtime  : {} ({})",
+                    probe.manifest.display_name,
+                    binary.display()
+                );
+                eprintln!("voice    : {}", voice.display());
+            }
 
-    let speech = synthesise(binary, &voice, text).map_err(describe)?;
+            synthesise(binary, &voice, text).map_err(describe)?.wav
+        }
+    };
 
     if let Some(parent) = out.parent() {
         std::fs::create_dir_all(parent).ok();
     }
-    std::fs::write(out, &speech.wav).with_context(|| format!("writing {}", out.display()))?;
+    std::fs::write(out, &wav).with_context(|| format!("writing {}", out.display()))?;
 
     if json {
         println!(
@@ -412,14 +505,14 @@ pub fn speak(ctx: &Context, text: &str, out: &Path, json: bool) -> Result<bool> 
             serde_json::json!({
                 "ok": true,
                 "path": out.display().to_string(),
-                "bytes": speech.wav.len(),
+                "bytes": wav.len(),
             })
         );
     } else {
         println!(
             "wrote {} ({})",
             out.display(),
-            output::human_bytes(speech.wav.len() as u64)
+            output::human_bytes(wav.len() as u64)
         );
     }
 
@@ -472,5 +565,10 @@ pub fn container_extension(mime_type: &str) -> Option<&'static str> {
 }
 
 fn describe(error: MultimodalError) -> anyhow::Error {
+    // A cancellation is the user's own doing; it should read as a stop, not a
+    // failure with a code.
+    if matches!(error, MultimodalError::Cancelled) {
+        return anyhow::anyhow!("the render was cancelled");
+    }
     anyhow::anyhow!(error.to_string())
 }

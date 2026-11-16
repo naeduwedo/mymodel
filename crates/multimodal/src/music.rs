@@ -75,6 +75,22 @@ impl AudioBackend {
     }
 }
 
+/// How far along a music render is.
+///
+/// The runtime exposes stages (`t5` text encoding, `rf_dit` diffusion,
+/// `same_decode` waveform decoding) through `--log-file`, but no step counter, so
+/// this reports the stage and the elapsed time. Inventing a percentage from
+/// elapsed time would be a guess.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MusicProgress {
+    /// Coarse stage the runtime is in.
+    pub stage: String,
+    /// The runtime's own key for this stage, e.g. `stable_audio.rf_dit`.
+    pub detail: String,
+    /// Milliseconds since the render started.
+    pub elapsed_ms: u64,
+}
+
 /// Generate music with `audio.cpp`.
 ///
 /// `model_dir` is the package directory, not the `.gguf` file: the runtime
@@ -86,6 +102,32 @@ pub fn generate(
     request: &MusicRequest,
     backend: AudioBackend,
 ) -> Result<GeneratedAudio, MultimodalError> {
+    generate_with_progress(
+        binary,
+        model_dir,
+        request,
+        backend,
+        &crate::cancel::CancelHandle::new(),
+        |_| {},
+    )
+}
+
+/// Generate music, reporting the runtime's stages as they happen.
+///
+/// The child writes its progress to `--log-file`; this polls that file while the
+/// child runs. The file is the runtime's own channel - nothing here fabricates a
+/// stage it did not see.
+pub fn generate_with_progress<F>(
+    binary: &Path,
+    model_dir: &Path,
+    request: &MusicRequest,
+    backend: AudioBackend,
+    cancel: &crate::cancel::CancelHandle,
+    mut on_progress: F,
+) -> Result<GeneratedAudio, MultimodalError>
+where
+    F: FnMut(MusicProgress),
+{
     if request.prompt.trim().is_empty() {
         return Err(MultimodalError::Invalid(
             "the prompt must not be empty".to_owned(),
@@ -104,7 +146,9 @@ pub fn generate(
     }
 
     let out = temporary_wav();
-    let output = std::process::Command::new(binary)
+    let log = temporary_log();
+    let started = std::time::Instant::now();
+    let mut child = std::process::Command::new(binary)
         .arg("--task")
         .arg("gen")
         .arg("--family")
@@ -119,11 +163,63 @@ pub fn generate(
         .arg(request.duration_seconds.to_string())
         .arg("--out")
         .arg(&out)
+        // The progress channel. `--log` alone goes to stdout, which also carries
+        // the result summary; a file keeps the two apart.
+        .arg("--log-file")
+        .arg(&log)
         .stdin(Stdio::null())
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
-        .output()
+        .spawn()
         .map_err(|err| MultimodalError::Runtime(format!("running audio.cpp: {err}")))?;
+
+    // Watch the log while the child works, emitting each new stage once.
+    let mut seen: Vec<String> = Vec::new();
+    loop {
+        // Stopping the child is the whole cancellation story for a CLI runtime.
+        if cancel.is_cancelled() {
+            let _ = child.kill();
+            let _ = child.wait();
+            let _ = std::fs::remove_file(&log);
+            let _ = std::fs::remove_file(&out);
+            return Err(MultimodalError::Cancelled);
+        }
+
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) => {}
+            Err(err) => {
+                let _ = child.kill();
+                return Err(MultimodalError::Runtime(format!(
+                    "waiting for audio.cpp: {err}"
+                )));
+            }
+        }
+
+        if let Ok(text) = std::fs::read_to_string(&log) {
+            for line in text.lines() {
+                if let Some(detail) = log_key(line)
+                    && let Some(stage) = stage_name(&detail)
+                    // Several keys belong to one stage; report the stage once.
+                    && !seen.iter().any(|existing| existing == stage)
+                {
+                    seen.push(stage.to_owned());
+                    on_progress(MusicProgress {
+                        stage: stage.to_owned(),
+                        detail,
+                        elapsed_ms: started.elapsed().as_millis() as u64,
+                    });
+                }
+            }
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|err| MultimodalError::Runtime(format!("collecting audio.cpp output: {err}")))?;
+    let _ = std::fs::remove_file(&log);
 
     if !output.status.success() {
         let _ = std::fs::remove_file(&out);
@@ -169,6 +265,50 @@ pub fn generate(
         sample_rate,
         channels,
     })
+}
+
+/// Pull the dotted key out of a log line like `[TIMING ts=...] stable_audio.rf_dit.graph.compute_ms 12.5`.
+///
+/// Returns `None` for lines that carry no key, so the caller ignores noise rather
+/// than reporting it as a stage.
+fn log_key(line: &str) -> Option<String> {
+    let after_bracket = line.split_once(']').map(|(_, rest)| rest.trim())?;
+    let key = after_bracket.split_whitespace().next()?;
+    if key.contains('.') {
+        Some(key.to_owned())
+    } else {
+        None
+    }
+}
+
+/// Turn `stable_audio.rf_dit.total_ms` into the coarse stage a user recognises.
+///
+/// Returns `None` for keys that describe a metric rather than a stage. Emitting a
+/// catch-all "working" for those would put noise in the progress line and say
+/// nothing, so they are dropped.
+fn stage_name(key: &str) -> Option<&'static str> {
+    // Weight and context keys appear throughout; they are all setup work.
+    if key.contains(".weights.") || key.contains("ctx_") || key.contains(".buffer") {
+        Some("loading weights")
+    } else if key.contains("t5") || key.contains("conditioner") {
+        Some("encoding the prompt")
+    } else if key.contains("rf_dit") {
+        Some("generating audio")
+    } else if key.contains("decode") {
+        Some("decoding the waveform")
+    } else if key.starts_with("runtime.model") {
+        Some("loading the model")
+    } else {
+        None
+    }
+}
+
+fn temporary_log() -> PathBuf {
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or_default();
+    std::env::temp_dir().join(format!("gguf-music-{unique}.log"))
 }
 
 /// Read `key=<number>` out of the runtime's summary line.
@@ -244,6 +384,47 @@ mod tests {
         )
         .unwrap_err();
         assert!(error.to_string().contains("model directory"), "{error}");
+    }
+
+    #[test]
+    fn a_log_line_yields_its_key_and_other_lines_are_ignored() {
+        assert_eq!(
+            log_key("[TIMING ts=1] stable_audio.rf_dit.graph.compute_ms 12.5"),
+            Some("stable_audio.rf_dit.graph.compute_ms".to_owned())
+        );
+        assert_eq!(log_key("no key here"), None);
+        assert_eq!(log_key(""), None);
+    }
+
+    #[test]
+    fn log_keys_map_to_stages_a_user_recognises() {
+        assert_eq!(
+            stage_name("stable_audio.t5.graph.compute_ms"),
+            Some("encoding the prompt")
+        );
+        assert_eq!(
+            stage_name("stable_audio.rf_dit.total_ms"),
+            Some("generating audio")
+        );
+        assert_eq!(
+            stage_name("stable_audio.same_decode.graph.compute_total_ms"),
+            Some("decoding the waveform")
+        );
+        assert_eq!(
+            stage_name("stable_audio.rf_dit.weights.buffer_mb"),
+            Some("loading weights")
+        );
+        assert_eq!(
+            stage_name("runtime.model.family"),
+            Some("loading the model")
+        );
+    }
+
+    #[test]
+    fn a_metric_that_is_not_a_stage_is_not_reported() {
+        // A catch-all "working" would fill the progress line with noise that
+        // tells the user nothing.
+        assert_eq!(stage_name("stable_audio.sampling_prepare_ms"), None);
     }
 
     #[test]
