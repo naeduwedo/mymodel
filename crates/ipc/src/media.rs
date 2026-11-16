@@ -32,6 +32,8 @@ impl MediaService {
                 config.diffusion_url.clone(),
                 config.asr_model.clone(),
                 config.tts_voice.clone(),
+                config.music_model.clone(),
+                config.audio_backend.clone(),
             ),
         }
     }

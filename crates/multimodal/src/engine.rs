@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use crate::error::MultimodalError;
 use crate::image::{GeneratedImage, ImageRequest, generate};
 use crate::modality::{ModalityState, modality_report};
+use crate::music::{AudioBackend, GeneratedAudio, MusicRequest};
 use crate::probe::probe_all;
 use crate::speech::{Speech, Transcription, synthesise, transcribe};
 use crate::video::{GeneratedVideo, VideoProgress, VideoRequest};
@@ -25,6 +26,10 @@ pub struct MediaEngine {
     pub asr_model: Option<PathBuf>,
     /// Piper voice model path.
     pub tts_voice: Option<PathBuf>,
+    /// Music model directory for audio.cpp.
+    pub music_model: Option<PathBuf>,
+    /// Backend audio.cpp should use.
+    pub audio_backend: AudioBackend,
 }
 
 impl MediaEngine {
@@ -34,6 +39,8 @@ impl MediaEngine {
         diffusion_url: Option<String>,
         asr_model: Option<String>,
         tts_voice: Option<String>,
+        music_model: Option<String>,
+        audio_backend: Option<String>,
     ) -> Self {
         let configured_base = diffusion_url
             .as_ref()
@@ -61,6 +68,14 @@ impl MediaEngine {
             diffusion_base: discovered_base,
             asr_model: non_empty(asr_model),
             tts_voice: non_empty(tts_voice),
+            music_model: non_empty(music_model),
+            // An unrecognised value falls back to the default rather than failing:
+            // a typo in a backend name should not make the product unusable.
+            audio_backend: match audio_backend.as_deref() {
+                Some("cpu") => AudioBackend::Cpu,
+                Some("cuda") => AudioBackend::Cuda,
+                _ => AudioBackend::default(),
+            },
         }
     }
 
@@ -126,6 +141,16 @@ impl MediaEngine {
         synthesise(&binary, voice, text)
     }
 
+    /// Generate music.
+    pub fn music(&self, request: &MusicRequest) -> Result<GeneratedAudio, MultimodalError> {
+        let model = self
+            .music_model
+            .as_ref()
+            .ok_or_else(|| Self::unavailable("music"))?;
+        let binary = runtime_binary("music")?;
+        crate::music::generate(&binary, model, request, self.audio_backend)
+    }
+
     /// Transcribe an audio file.
     pub fn transcribe(
         &self,
@@ -169,13 +194,20 @@ mod tests {
 
     #[test]
     fn blank_paths_are_treated_as_absent() {
-        let engine = MediaEngine::new(Some("  ".to_owned()), None, None, None);
+        let engine = MediaEngine::new(Some("  ".to_owned()), None, None, None, None, None);
         assert!(engine.image_model.is_none());
     }
 
     #[test]
     fn a_real_path_is_kept() {
-        let engine = MediaEngine::new(Some("C:/models/x.gguf".to_owned()), None, None, None);
+        let engine = MediaEngine::new(
+            Some("C:/models/x.gguf".to_owned()),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
         assert!(engine.image_model.is_some());
     }
 

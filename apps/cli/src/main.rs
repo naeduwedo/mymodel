@@ -186,6 +186,18 @@ enum Command {
         #[arg(long)]
         seed: Option<i64>,
     },
+    /// Generate music with the installed ggml audio runtime.
+    Music {
+        /// What to generate (English; that is the model's prompt language).
+        #[arg(short, long)]
+        prompt: String,
+        /// Where to write the WAV.
+        #[arg(long, default_value = "music.wav")]
+        out: PathBuf,
+        /// Length in seconds.
+        #[arg(long, default_value_t = 10)]
+        duration: u32,
+    },
     /// Transcribe an audio file with the installed speech-recognition runtime.
     Transcribe {
         /// Audio file (16-bit PCM WAV for whisper.cpp).
@@ -475,6 +487,22 @@ async fn run(cli: Cli) -> Result<ExitCode> {
                 seed,
             };
             let ok = commands::video(&ctx, &prompt, options, cli.json).await?;
+            Ok(if ok {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+        Command::Music {
+            prompt,
+            out,
+            duration,
+        } => {
+            let options = commands::MusicOptions {
+                out,
+                duration_seconds: duration,
+            };
+            let ok = commands::music(&ctx, &prompt, options, cli.json)?;
             Ok(if ok {
                 ExitCode::SUCCESS
             } else {

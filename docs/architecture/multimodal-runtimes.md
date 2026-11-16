@@ -19,12 +19,43 @@ own the last.
 
 | Runtime | Kind | Invocation | Modalities | Verified here |
 | --- | --- | --- | --- | --- |
-| stable-diffusion.cpp | diffusion | `sd-server` over HTTP | image generation, video | **yes**, see below |
+| stable-diffusion.cpp | diffusion | `sd-server` over HTTP | image generation, video | **yes** |
 | whisper.cpp | speech recognition | `whisper-cli` once per request | ASR | **yes** |
 | Piper | speech synthesis | `piper` once per request | TTS | **yes** |
+| audio.cpp | audio generation (ggml) | `audiocpp_cli` once per request | music, sound effects | **yes** |
 
-Nothing else is integrated. Music generation has no adapter, and the modality
-report says so rather than omitting the question.
+Every one of them is a standalone C++ binary. None of them is ComfyUI, and none of
+them needs Python at run time.
+
+## Music and sound, on GGUF weights
+
+`audio.cpp` is a ggml runtime in the same family as llama.cpp: it loads GGUF
+weights and runs them itself. Built from source here with CUDA, restricted to the
+model families this project uses.
+
+```text
+$ gguf music --prompt 'warm ambient piano with soft rain' --duration 8
+runtime  : AudioCPP (...\audiocpp_cli.exe, Cuda)
+model    : ...\stable-audio-3-small-music-f16
+wrote song.wav (1.3 MiB, 44100 Hz, 2 channel(s))      1.6 s
+```
+
+Eight seconds of stereo 44.1 kHz audio in 1.6 s - about five times real time.
+Sound effects use the same code path with the SFX package: 5 s in 2.8 s.
+
+### The quantization/backend pair matters
+
+| Weights | Backend | Result |
+| --- | --- | --- |
+| q8_0 | cuda | **aborts** - ggml's MMQ kernel asserts (`mmq_x_best=0`) |
+| q8_0 | cpu | works |
+| f16 | cuda | works |
+
+The first attempt at music crashed the process in 2.8 s with a ggml assertion. It
+is not a bug in this project and not a broken GPU: the Q8_0 matmul kernel in this
+ggml build does not accept this model on this driver. The runtime therefore
+exposes the backend as configuration (`multimodal.audio_backend`) and the docs
+name the pair, because "use CUDA" alone is not enough information.
 
 ## Evidence, not claims
 

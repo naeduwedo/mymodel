@@ -64,8 +64,8 @@ pub fn modality_report() -> Vec<ModalityReport> {
     }
     names.sort();
 
-    // Music has no runtime at all; it is named here so the report can say so
-    // instead of silently omitting the question.
+    // Named explicitly so the report answers the question even when no manifest
+    // claims the modality, rather than silently omitting it.
     for extra in ["music"] {
         if !names.iter().any(|name| name == extra) {
             names.push(extra.to_owned());
@@ -153,14 +153,21 @@ mod tests {
     }
 
     #[test]
-    fn music_is_reported_as_having_no_runtime_rather_than_being_hidden() {
+    fn music_is_always_reported_even_when_no_runtime_provides_it() {
+        // Whether music is available depends on audio.cpp being installed, but
+        // the row must exist either way: a user asking "can it do music?" gets an
+        // answer, not silence.
         let report = modality_report();
         let music = report
             .iter()
             .find(|row| row.modality == "music")
             .expect("music must appear so the question is answered");
-        assert_eq!(music.state, ModalityState::NoRuntime);
-        assert!(music.detail.contains("no runtime"), "{}", music.detail);
+
+        match music.state {
+            ModalityState::Available => assert!(music.runtime.is_some()),
+            ModalityState::NotInstalled => assert!(!music.detail.is_empty()),
+            ModalityState::NoRuntime => assert!(music.detail.contains("no runtime")),
+        }
     }
 
     #[test]

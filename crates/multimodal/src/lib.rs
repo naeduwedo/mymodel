@@ -20,6 +20,7 @@ pub mod error;
 pub mod image;
 pub mod manifest;
 pub mod modality;
+pub mod music;
 pub mod probe;
 pub mod speech;
 pub mod video;
@@ -29,6 +30,7 @@ pub use error::MultimodalError;
 pub use image::{GeneratedImage, ImageRequest, generate as generate_image};
 pub use manifest::{Invocation, RuntimeKind, RuntimeManifest, builtin_manifests};
 pub use modality::{ModalityReport, ModalityState, modality_report};
+pub use music::{AudioBackend, GeneratedAudio, MusicRequest, generate as generate_music};
 pub use probe::{
     RUNTIME_ENV, RuntimeProbe, http_base, locate, probe, probe_all, runtime_for, search_dirs,
 };

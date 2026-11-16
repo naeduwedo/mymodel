@@ -43,6 +43,23 @@ fn runtime_for(modality: &str) -> Result<&'static gguf_engine_multimodal::Runtim
     )
 }
 
+/// Like `require_path`, but for a configured directory.
+fn require_dir(label: &str, value: Option<&String>) -> Result<PathBuf> {
+    match value {
+        Some(path) if !path.trim().is_empty() => {
+            let path = PathBuf::from(path);
+            if !path.is_dir() {
+                anyhow::bail!(
+                    "{label} must be a model directory, not a file: {}",
+                    path.display()
+                );
+            }
+            Ok(path)
+        }
+        _ => anyhow::bail!("set multimodal.{label} in the configuration (gguf config --show)"),
+    }
+}
+
 fn require_path(label: &str, value: Option<&String>) -> Result<PathBuf> {
     match value {
         Some(path) if !path.trim().is_empty() => {
@@ -251,6 +268,83 @@ pub struct ImageOptions {
     pub seed: Option<i64>,
     /// Negative prompt.
     pub negative_prompt: Option<String>,
+}
+
+/// `gguf music` — generate music or sound effects.
+///
+/// Runs on the ggml audio runtime (`audio.cpp`): GGUF weights, no Python and no
+/// ComfyUI. The call blocks for the render, which is seconds to a couple of
+/// minutes depending on length and backend.
+pub fn music(ctx: &Context, prompt: &str, options: MusicOptions, json: bool) -> Result<bool> {
+    let probe = runtime_for("music")?;
+    let binary = probe
+        .path
+        .as_deref()
+        .context("the music runtime has no path")?;
+    // The music runtime resolves components inside a package directory, so this
+    // one is a directory, not a file.
+    let model = require_dir("music_model", ctx.config.multimodal.music_model.as_ref())?;
+
+    let backend = match ctx.config.multimodal.audio_backend.as_deref() {
+        Some("cpu") => gguf_engine_multimodal::AudioBackend::Cpu,
+        Some("cuda") => gguf_engine_multimodal::AudioBackend::Cuda,
+        _ => gguf_engine_multimodal::AudioBackend::default(),
+    };
+
+    let mut request = gguf_engine_multimodal::MusicRequest::new(prompt);
+    request.duration_seconds = options.duration_seconds;
+
+    if !json {
+        eprintln!(
+            "runtime  : {} ({}, {:?})",
+            probe.manifest.display_name,
+            binary.display(),
+            backend
+        );
+        eprintln!("model    : {}", model.display());
+        eprintln!("request  : {} s", request.duration_seconds);
+    }
+
+    let generated = gguf_engine_multimodal::generate_music(binary, &model, &request, backend)
+        .map_err(describe)?;
+
+    if let Some(parent) = options.out.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
+    std::fs::write(&options.out, &generated.wav)
+        .with_context(|| format!("writing {}", options.out.display()))?;
+
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "ok": true,
+                "path": options.out.display().to_string(),
+                "bytes": generated.wav.len(),
+                "sample_rate": generated.sample_rate,
+                "channels": generated.channels,
+            })
+        );
+    } else {
+        println!(
+            "wrote {} ({}, {} Hz, {} channel(s))",
+            options.out.display(),
+            output::human_bytes(generated.wav.len() as u64),
+            generated.sample_rate,
+            generated.channels
+        );
+    }
+
+    Ok(true)
+}
+
+/// Music generation options.
+#[derive(Debug, Clone)]
+pub struct MusicOptions {
+    /// Output path.
+    pub out: PathBuf,
+    /// Length in seconds.
+    pub duration_seconds: u32,
 }
 
 /// `gguf transcribe` — speech to text.

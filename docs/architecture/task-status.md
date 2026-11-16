@@ -433,7 +433,7 @@ from source and driven for real; music has none, and the report says so.
 | stable-diffusion.cpp | video | **yes** - Wan 2.1 T2V 1.3B: 17 frames in 95.7 s through the adapter; refusal path also verified |
 | whisper.cpp (`whisper-cli`, CUDA) | ASR | **yes** - round trip through SAPI speech |
 | Piper | TTS | **yes** - and its output transcribes back to the same sentence |
-| - | music | **no runtime**, and no adapter claims one |
+| audio.cpp (ggml, GGUF) | music, sound effects | **yes** - 8 s of music in 1.6 s on CUDA |
 
 ```text
 $ gguf modalities
@@ -469,7 +469,7 @@ per-device budgets and expiring leases exist to prevent, seen from the outside.
 
 | Capability | Why |
 | --- | --- |
-| Music generation | no ggml-based music runtime is integrated; adding one means a new adapter and a manifest, not a flag |
+| ~~Music generation~~ | **done** - audio.cpp, GGUF, no Python and no ComfyUI |
 | Rendering with Wan 2.2 A14B | it needs both 13.3 GB transformers plus a 6.3 GB encoder; the 1.3B variant is what fits a 24 GB card |
 | Starting the diffusion server automatically | the model must be on its command line; the engine points at a server the user runs |
 | `/v1/audio` in the UI shells | the endpoints exist; the shells have no audio page yet |
@@ -525,3 +525,42 @@ Generate clip, and observed `sampling 3/8 steps` -> `vae_decode` -> `Wrote 424 K
 Two real defects found by doing it: the adapter never sent `sample_steps` (so the
 runtime used its default 20 and tripled the render time), and the CLI rewrote its
 progress line on every poll because the elapsed time always changed.
+## Follow-up - music and sound effects on GGUF: **done**
+
+`audio.cpp` is a ggml runtime (same family as llama.cpp): GGUF weights, C++ only,
+no Python, no ComfyUI. Built from source here with CUDA and a restricted model set.
+
+```text
+$ gguf music --prompt 'warm ambient piano with soft rain' --duration 8
+wrote song.wav (1.3 MiB, 44100 Hz, 2 channel(s))     1.6 s
+
+$ gguf modalities | Select-String music
+music              supported      AudioCPP      provided by AudioCPP (...audiocpp_cli.exe)
+sfx                supported      AudioCPP      provided by AudioCPP (...audiocpp_cli.exe)
+```
+
+| Modality | Model | Time |
+| --- | --- | --- |
+| music | Stable Audio 3 Small Music, f16, CUDA | 8 s of audio in 1.6 s |
+| sound effects | Stable Audio 3 Small SFX, f16, CUDA | 5 s of audio in 2.8 s |
+
+### A quantization/backend pair, found by crashing
+
+The first music attempt died in 2.8 s inside ggml's MMQ kernel (`mmq_x_best=0`).
+Q8_0 weights on CUDA abort; Q8_0 on CPU and f16 on CUDA both work. The backend is
+therefore configuration (`multimodal.audio_backend`), and the docs name the pair
+rather than saying "use CUDA".
+
+### On "everything must be GGUF"
+
+Spec §1.2 and ADR-002 say **GGUF-first, not GGUF-only**: GGUF is preferred, and a
+multimodal model may declare necessary non-GGUF components as long as the manifest
+lists them. That is why the manifests carry `model_archs` and `quantizations`: the
+Piper voice is ONNX and says so.
+
+Where the product was genuinely weaker than that rule, it was not the format - it
+was provenance: the image and video test commands pointed at weights stored inside
+a ComfyUI install on this machine. No runtime ever called ComfyUI, but a path that
+reads `E:\ComfyUI\models\...` looks like a dependency. Music, speech and the Wan
+video model now live under the project's own runtime directory; the image path
+still borrows a checkpoint from there and should be moved the same way.

@@ -81,6 +81,15 @@ pub struct MultimodalConfig {
     /// Piper voice model (`*.onnx`).
     #[serde(default)]
     pub tts_voice: Option<String>,
+    /// Music model *directory* for audio.cpp (it resolves components inside).
+    #[serde(default)]
+    pub music_model: Option<String>,
+    /// Backend for audio.cpp: `cpu` or `cuda`.
+    ///
+    /// The pair matters: a q8_0 package on CUDA aborts inside ggml's MMQ kernel on
+    /// some drivers, while f16 on CUDA and q8_0 on CPU both work.
+    #[serde(default)]
+    pub audio_backend: Option<String>,
 }
 
 /// `[core]` — daemon identity, ports and lifecycle behaviour.

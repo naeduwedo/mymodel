@@ -30,7 +30,9 @@ pub use config::config;
 pub use doctor::doctor;
 pub use hardware::hardware;
 pub use inspect::inspect;
-pub use media::{ImageOptions, VideoOptions, image, speak, transcribe_audio, video};
+pub use media::{
+    ImageOptions, MusicOptions, VideoOptions, image, music, speak, transcribe_audio, video,
+};
 pub use memory::memory;
 pub use modalities::modalities_cmd;
 pub use models::{list, pull, search};

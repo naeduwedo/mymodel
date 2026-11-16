@@ -160,6 +160,39 @@ pub fn builtin_manifests() -> Vec<RuntimeManifest> {
             },
         },
         RuntimeManifest {
+            // A ggml runtime for audio models, the same family as llama.cpp: it
+            // loads GGUF weights and runs them itself, with no Python involved.
+            id: "audio.cpp".to_owned(),
+            display_name: "AudioCPP".to_owned(),
+            kind: RuntimeKind::MusicGeneration,
+            os: vec!["windows".to_owned(), "linux".to_owned(), "macos".to_owned()],
+            archs: vec!["x86_64".to_owned(), "aarch64".to_owned()],
+            backends: vec![
+                "cpu".to_owned(),
+                "cuda".to_owned(),
+                "vulkan".to_owned(),
+                "metal".to_owned(),
+            ],
+            model_archs: vec![
+                "stable_audio".to_owned(),
+                "ace_step".to_owned(),
+                "heartmula".to_owned(),
+                "kokoro".to_owned(),
+                "qwen3_tts".to_owned(),
+            ],
+            quantizations: vec!["f16".to_owned(), "bf16".to_owned(), "q8_0".to_owned()],
+            parallel_modes: vec!["none".to_owned()],
+            gpu_offload: true,
+            paging: false,
+            // Music and sound effects. Speech is covered by Piper here; this
+            // runtime can also do TTS, but claiming it without a verified voice
+            // package would be a promise the build has not kept.
+            modalities: vec!["music".to_owned(), "sfx".to_owned()],
+            invocation: Invocation::Cli {
+                binary: "audiocpp_cli".to_owned(),
+            },
+        },
+        RuntimeManifest {
             id: "piper".to_owned(),
             display_name: "Piper".to_owned(),
             kind: RuntimeKind::SpeechSynthesis,
@@ -215,9 +248,9 @@ mod tests {
             .flat_map(|m| m.modalities.iter().map(String::as_str))
             .collect();
 
-        // Music is deliberately absent: no runtime is implemented for it, so
-        // no manifest claims it. See `modality_status`.
-        for expected in ["image_generation", "video", "asr", "tts"] {
+        // Every modality the product offers is claimed by some manifest; nothing
+        // is advertised without a runtime behind it.
+        for expected in ["image_generation", "video", "asr", "tts", "music"] {
             assert!(
                 modalities.contains(&expected),
                 "no runtime provides {expected}"

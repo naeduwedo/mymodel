@@ -44,6 +44,10 @@ pub struct LocalMedia {
     pub tts_voice: Option<PathBuf>,
     /// Base URL of a running diffusion server, when one is configured.
     pub diffusion_base: Option<String>,
+    /// Music model directory for audio.cpp.
+    pub music_model: Option<PathBuf>,
+    /// Raw backend name for audio.cpp, resolved by the engine.
+    pub audio_backend_raw: Option<String>,
 }
 
 impl LocalMedia {
@@ -80,6 +84,12 @@ impl LocalMedia {
 
         Self {
             image_model,
+            music_model: config
+                .music_model
+                .as_ref()
+                .filter(|value| !value.trim().is_empty())
+                .map(PathBuf::from),
+            audio_backend_raw: config.audio_backend.clone(),
             asr_model: config
                 .asr_model
                 .as_ref()
