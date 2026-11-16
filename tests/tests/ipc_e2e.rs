@@ -51,17 +51,24 @@ fn bin(name: &str) -> PathBuf {
     panic!("could not find {exe}; looked in {looked:?}");
 }
 
-/// A port the OS says is free right now.
+/// A port no other test in this process will use.
 ///
-/// The gateway defaults to the fixed port 18888 and rejects 0 as a configuration
-/// value, so parallel test daemons need distinct, known ports. Binding to port 0
-/// asks the OS, and the listener is dropped immediately: the window before the
-/// daemon binds is small, and a collision fails loudly rather than silently.
+/// Asking the OS for a free port and immediately releasing it leaves a window: a
+/// parallel daemon can take it before this one binds, which made the ubuntu job
+/// fail intermittently. Handing out distinct numbers from a counter removes the
+/// race between the tests themselves; the probe below only guards against
+/// something outside the suite already listening.
 fn free_port() -> u16 {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .and_then(|listener| listener.local_addr())
-        .map(|addr| addr.port())
-        .expect("a free loopback port")
+    use std::sync::atomic::{AtomicU16, Ordering};
+    static NEXT: AtomicU16 = AtomicU16::new(19200);
+
+    for _ in 0..500 {
+        let port = NEXT.fetch_add(1, Ordering::Relaxed);
+        if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            return port;
+        }
+    }
+    panic!("no free port in the test range");
 }
 
 fn start_daemon(data_root: &Path) -> Daemon {
@@ -222,6 +229,31 @@ fn daemon_streams_events_and_survives_a_disconnect() {
 fn a_second_daemon_refuses_to_start_and_the_first_keeps_serving() {
     let tmp = tempfile::tempdir().expect("temp dir");
     let _daemon = start_daemon(tmp.path());
+
+    // Wait until the first core actually owns the instance lock before starting
+    // a contender. Without this the two processes race and whichever wins keeps
+    // serving, so the test failed under parallel load - not because the guard
+    // was broken, but because the first core had not taken the lock yet.
+    //
+    // The probe is the lock itself, not the recorded pid and not a connection:
+    // on Windows the exclusive lock also blocks reads, and a probe connection
+    // consumes a pipe instance that the rest of this suite needs.
+    let lock_path = tmp.path().join("database").join("core.lock");
+    let deadline = std::time::Instant::now() + Duration::from_secs(20);
+    loop {
+        match gguf_engine_core::InstanceLock::acquire(&lock_path) {
+            // We got it, so the first core has not taken it yet: let go and retry.
+            Ok(probe) => drop(probe),
+            Err(gguf_engine_core::LockError::Held { .. }) => break,
+            Err(err) => panic!("probing the instance lock failed: {err}"),
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the first core never took the instance lock at {}",
+            lock_path.display()
+        );
+        std::thread::sleep(Duration::from_millis(25));
+    }
 
     // Bounded wait on purpose. `.status()` blocks for ever if the guard fails,
     // and a test that hangs takes the whole CI job down with it instead of

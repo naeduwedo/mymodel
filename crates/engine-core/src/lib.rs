@@ -15,7 +15,7 @@ pub mod lock;
 
 pub use health::{ComponentHealth, HealthMonitor, HealthReport};
 pub use lifecycle::{Lifecycle, StateChange, TransitionError, allowed_successors, can_transition};
-pub use lock::{InstanceLock, LockError};
+pub use lock::{InstanceLock, LockError, read_owner_pid};
 
 /// Name reported by the health endpoint.
 pub const CORE_NAME: &str = "gguf-ai-engine-core";

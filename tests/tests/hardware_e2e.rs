@@ -77,17 +77,24 @@ async fn connect_with_retry(data_root: &Path, timeout: Duration) -> gguf_engine_
     panic!("core did not start listening: {last}");
 }
 
-/// A port the OS says is free right now.
+/// A port no other test in this process will use.
 ///
-/// The gateway defaults to the fixed port 18888 and rejects 0 as a configuration
-/// value, so parallel test daemons need distinct, known ports. Binding to port 0
-/// asks the OS, and the listener is dropped immediately: the window before the
-/// daemon binds is small, and a collision fails loudly rather than silently.
+/// Asking the OS for a free port and immediately releasing it leaves a window: a
+/// parallel daemon can take it before this one binds, which made the ubuntu job
+/// fail intermittently. Handing out distinct numbers from a counter removes the
+/// race between the tests themselves; the probe below only guards against
+/// something outside the suite already listening.
 fn free_port() -> u16 {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .and_then(|listener| listener.local_addr())
-        .map(|addr| addr.port())
-        .expect("a free loopback port")
+    use std::sync::atomic::{AtomicU16, Ordering};
+    static NEXT: AtomicU16 = AtomicU16::new(19200);
+
+    for _ in 0..500 {
+        let port = NEXT.fetch_add(1, Ordering::Relaxed);
+        if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            return port;
+        }
+    }
+    panic!("no free port in the test range");
 }
 
 fn start_daemon(data_root: &Path) -> Daemon {

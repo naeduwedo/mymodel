@@ -12,6 +12,9 @@ on:
       - 'proto/**'
       - 'crates/ipc/**'
       - 'crates/protocol/**'
+      # The stub check is itself a script; changing it must re-run the job that
+      # exercises it, or the fix is never verified.
+      - 'scripts/generate-csharp-protos.ps1'
       - '.github/workflows/platform-shells.yml'
   pull_request:
     paths:
@@ -19,6 +22,9 @@ on:
       - 'proto/**'
       - 'crates/ipc/**'
       - 'crates/protocol/**'
+      # The stub check is itself a script; changing it must re-run the job that
+      # exercises it, or the fix is never verified.
+      - 'scripts/generate-csharp-protos.ps1'
       - '.github/workflows/platform-shells.yml'
   workflow_dispatch:
 
