@@ -51,6 +51,29 @@ fn bin(name: &str) -> PathBuf {
     panic!("could not find {exe}; looked in {looked:?}");
 }
 
+/// Block until the daemon answers on its gateway port.
+///
+/// Readiness has to be observed somehow before a test asserts on a live core, and
+/// the two obvious probes are both wrong here:
+///
+/// * reading the recorded pid fails on Windows, where the exclusive lock also
+///   blocks reads;
+/// * taking the lock ourselves races the daemon - the probe can win at exactly
+///   the wrong moment and make the core exit with "already running".
+///
+/// The gateway binds after the IPC endpoint, so a TCP connect is a faithful "it is
+/// serving" signal that touches neither.
+fn wait_for_gateway(port: u16) {
+    let deadline = std::time::Instant::now() + Duration::from_secs(60);
+    while std::time::Instant::now() < deadline {
+        if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    panic!("the core never started its gateway on port {port}");
+}
+
 /// A port no other test in this process will use.
 ///
 /// Asking the OS for a free port and immediately releasing it leaves a window: a
@@ -73,9 +96,10 @@ fn free_port() -> u16 {
 
 fn start_daemon(data_root: &Path) -> Daemon {
     // Parallel tests each need their own gateway port; see `free_port`.
+    let port = free_port();
     std::fs::write(
         data_root.join(gguf_engine_config::CONFIG_FILE_NAME),
-        format!("[core]\napi_port = {}\n", free_port()),
+        format!("[core]\napi_port = {port}\n"),
     )
     .expect("writing a test config");
 
@@ -86,6 +110,8 @@ fn start_daemon(data_root: &Path) -> Daemon {
         .stderr(Stdio::null())
         .spawn()
         .expect("spawning gguf-core");
+
+    wait_for_gateway(port);
     Daemon { child }
 }
 
@@ -229,31 +255,6 @@ fn daemon_streams_events_and_survives_a_disconnect() {
 fn a_second_daemon_refuses_to_start_and_the_first_keeps_serving() {
     let tmp = tempfile::tempdir().expect("temp dir");
     let _daemon = start_daemon(tmp.path());
-
-    // Wait until the first core actually owns the instance lock before starting
-    // a contender. Without this the two processes race and whichever wins keeps
-    // serving, so the test failed under parallel load - not because the guard
-    // was broken, but because the first core had not taken the lock yet.
-    //
-    // The probe is the lock itself, not the recorded pid and not a connection:
-    // on Windows the exclusive lock also blocks reads, and a probe connection
-    // consumes a pipe instance that the rest of this suite needs.
-    let lock_path = tmp.path().join("database").join("core.lock");
-    let deadline = std::time::Instant::now() + Duration::from_secs(60);
-    loop {
-        match gguf_engine_core::InstanceLock::acquire(&lock_path) {
-            // We got it, so the first core has not taken it yet: let go and retry.
-            Ok(probe) => drop(probe),
-            Err(gguf_engine_core::LockError::Held { .. }) => break,
-            Err(err) => panic!("probing the instance lock failed: {err}"),
-        }
-        assert!(
-            std::time::Instant::now() < deadline,
-            "the first core never took the instance lock at {}",
-            lock_path.display()
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    }
 
     // Bounded wait on purpose. `.status()` blocks for ever if the guard fails,
     // and a test that hangs takes the whole CI job down with it instead of
