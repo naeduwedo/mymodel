@@ -1,9 +1,13 @@
 //! Single-instance lock (spec §3.3: "单实例锁 / single instance lock").
 //!
 //! Two cores sharing one data root would fight over the SQLite database, the
-//! GPU leases and the worker table. The lock is an exclusive OS file handle
-//! (`share_mode(0)` on Windows, advisory `flock`-equivalent semantics via
-//! `create_new` + recorded pid elsewhere) held for the lifetime of the core.
+//! GPU leases and the worker table. The lock is an exclusive OS file lock
+//! (`fs4`, which is `LockFileEx` on Windows and `flock` on Unix) held for the
+//! lifetime of the core.
+//!
+//! Both mechanisms are released by the OS when the process dies, so a crash
+//! cannot leave a stale lock behind - which is why this is a lock and not a
+//! "create the file, fail if it exists" scheme.
 //!
 //! The lock file records the owning pid and start time so a user (and the CLI)
 //! can see *who* holds it instead of a generic failure.
@@ -12,6 +16,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
+use fs4::FileExt;
 use thiserror::Error;
 
 /// Errors raised while acquiring the single-instance lock.
@@ -72,28 +77,33 @@ impl InstanceLock {
 
         let mut options = OpenOptions::new();
         options.read(true).write(true).create(true).truncate(false);
-        #[cfg(windows)]
-        {
-            use std::os::windows::fs::OpenOptionsExt as _;
-            // 0 = no sharing: another process opening the file fails with
-            // ERROR_SHARING_VIOLATION, which Windows releases automatically
-            // when this process dies (no stale locks after a crash).
-            options.share_mode(0);
-        }
 
-        let mut file = options
-            .open(&path)
-            .map_err(|err| match err.raw_os_error() {
-                #[cfg(windows)]
-                Some(32) | Some(33) => LockError::Held {
+        let mut file = options.open(&path).map_err(|source| LockError::Io {
+            path: path.display().to_string(),
+            source,
+        })?;
+
+        // An OS file lock works on every platform and is released when the
+        // process dies. Before this, only Windows was protected: on Unix a
+        // second core started happily against the same data root, which the
+        // end-to-end test caught by hanging.
+        // Called through the trait on purpose: Rust 1.100 added an inherent
+        // `File::try_lock`, which would shadow this and raise the MSRV.
+        match FileExt::try_lock(&file) {
+            Ok(()) => {}
+            Err(fs4::TryLockError::WouldBlock) => {
+                return Err(LockError::Held {
                     path: path.display().to_string(),
                     pid: read_owner_pid(&path).unwrap_or(0),
-                },
-                _ => LockError::Io {
+                });
+            }
+            Err(fs4::TryLockError::Error(source)) => {
+                return Err(LockError::Io {
                     path: path.display().to_string(),
-                    source: err,
-                },
-            })?;
+                    source,
+                });
+            }
+        }
 
         let pid = std::process::id();
         file.set_len(0).map_err(|source| LockError::Io {
@@ -179,31 +189,21 @@ mod tests {
     }
 
     #[test]
-    fn second_acquire_in_same_process_is_reported_on_windows() {
+    fn a_second_acquire_is_refused_on_every_platform() {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("core.lock");
         let first = InstanceLock::acquire(&path).unwrap();
-        let second = InstanceLock::acquire(&path);
-        // On Windows the exclusive share mode rejects the second open.
-        #[cfg(windows)]
-        {
-            // The pid is reported as 0 because the lock file itself cannot be
-            // opened for reading while it is held exclusively; the caller gets
-            // the `Held` error, which is what matters.
-            match second {
-                Err(LockError::Held { pid, path }) => {
-                    assert_eq!(pid, 0);
-                    assert!(path.ends_with("core.lock"));
-                }
-                other => panic!("expected Held, got {other:?}"),
+
+        // The lock must be enforced by the OS, not by our bookkeeping: a second
+        // core on the same data root is the failure this exists to prevent, and
+        // it was previously only prevented on Windows.
+        match InstanceLock::acquire(&path) {
+            Err(LockError::Held { path, .. }) => {
+                assert!(path.ends_with("core.lock"), "{path}");
             }
+            other => panic!("expected Held, got {other:?}"),
         }
-        #[cfg(not(windows))]
-        {
-            // Advisory locking is not enforced in-process on Unix yet; the
-            // lock file must at least be reusable after release.
-            drop(second);
-        }
+
         first.release();
         InstanceLock::acquire(&path).expect("lock is reusable after release");
     }

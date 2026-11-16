@@ -203,15 +203,38 @@ fn a_second_daemon_refuses_to_start_and_the_first_keeps_serving() {
     let tmp = tempfile::tempdir().expect("temp dir");
     let _daemon = start_daemon(tmp.path());
 
-    let second = Command::new(bin("gguf-core"))
+    // Bounded wait on purpose. `.status()` blocks for ever if the guard fails,
+    // and a test that hangs takes the whole CI job down with it instead of
+    // saying what went wrong.
+    let mut second = Command::new(bin("gguf-core"))
         .arg("--data-dir")
         .arg(tmp.path())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .expect("spawning a second core");
+
+    let deadline = std::time::Instant::now() + Duration::from_secs(20);
+    let status = loop {
+        if let Some(status) = second.try_wait().expect("polling the second core") {
+            break status;
+        }
+        if std::time::Instant::now() >= deadline {
+            let _ = second.kill();
+            let output = second
+                .wait_with_output()
+                .expect("collecting the second core");
+            panic!(
+                "the second core kept running against the same data root; \
+                 the single-instance lock is not enforced on this platform. stderr: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            );
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+
     assert_eq!(
-        second.code(),
+        status.code(),
         Some(3),
         "a second core must exit with the 'already running' code"
     );
