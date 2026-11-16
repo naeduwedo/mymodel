@@ -157,18 +157,21 @@ impl pb::inference_service_server::InferenceService for InferenceService {
     ) -> Result<Response<pb::EmbeddingsResponse>, Status> {
         let request = request.into_inner();
 
-        let Some(adapter) = self.adapter.clone() else {
-            return Err(Status::unimplemented(
-                "no runtime is installed: install llama.cpp and set GGUF_LLAMA_CPP_DIR",
-            ));
-        };
-
+        // Validation comes first: a malformed request is the caller's problem
+        // whether or not a runtime happens to be installed, and answering
+        // "install llama.cpp" to an empty input sends them the wrong way.
         if request.input.is_empty() {
             return Err(Status::invalid_argument("input must not be empty"));
         }
         if request.model_id.trim().is_empty() {
             return Err(Status::invalid_argument("model_id must not be empty"));
         }
+
+        let Some(adapter) = self.adapter.clone() else {
+            return Err(Status::unimplemented(
+                "no runtime is installed: install llama.cpp and set GGUF_LLAMA_CPP_DIR",
+            ));
+        };
 
         let permit = self.slots.clone().try_acquire_owned().map_err(|_| {
             Status::resource_exhausted("another model is loaded; wait for that answer to finish")
@@ -232,18 +235,20 @@ impl pb::inference_service_server::InferenceService for InferenceService {
     ) -> Result<Response<Self::ChatStream>, Status> {
         let request = request.into_inner();
 
-        let Some(adapter) = self.adapter.clone() else {
-            return Err(Status::unimplemented(
-                "no runtime is installed: install llama.cpp and set GGUF_LLAMA_CPP_DIR",
-            ));
-        };
-
+        // Validation first, for the same reason as in `embeddings`: the shape of
+        // the request does not depend on what is installed.
         if request.messages.is_empty() {
             return Err(Status::invalid_argument("messages must not be empty"));
         }
         if request.model_id.trim().is_empty() {
             return Err(Status::invalid_argument("model_id must not be empty"));
         }
+
+        let Some(adapter) = self.adapter.clone() else {
+            return Err(Status::unimplemented(
+                "no runtime is installed: install llama.cpp and set GGUF_LLAMA_CPP_DIR",
+            ));
+        };
 
         // Refuse rather than queue: a queued request looks like a hang, and the
         // VRAM is already committed to whoever holds the slot.

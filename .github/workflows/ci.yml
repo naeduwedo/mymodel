@@ -49,10 +49,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Build the binaries the end-to-end suite spawns
+        # The e2e suites run `target/<profile>/gguf` and `gguf-core` for real
+        # rather than mocking them, so those binaries must exist before any test
+        # runs. `cargo test` builds them, but not necessarily before the suite
+        # that needs them, so this is explicit - the same order the local gate
+        # uses.
+        run: cargo build --workspace
       - name: Unit and integration tests
         # Hardware-dependent suites (GPU, multi-GPU, memory pressure) are not
         # part of this job: CI runners have no GPU. Mock-backed tests must be
-        # labelled as such wherever they appear (spec §14.2).
+        # labelled as such wherever they appear (spec §14.2). Tests that need a
+        # real model are `#[ignore]`d and opt in through an environment variable.
         run: cargo test --workspace --all-targets
       - name: Documentation builds without warnings
         run: cargo doc --workspace --no-deps
