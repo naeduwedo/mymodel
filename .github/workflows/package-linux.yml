@@ -2,15 +2,19 @@ name: Packaging
 
 # Builds the Linux packages that packaging/linux/nfpm.yaml describes.
 #
-# This workflow exists because those packages were written on Windows and could
-# not be built there. Until this job runs green, packaging/linux/README.md
-# correctly says "recipe only, not built" - and that claim is meant to expire.
+# The work is done by packaging/linux/build-packages.sh, not by this file. That
+# script resolves the version (writing a generated nfpm config, because
+# {{ .Env.VERSION }} leaks into the artefact name), builds the GTK4 shell the
+# desktop entry points at, and verifies the .deb file list. An earlier version of
+# this workflow called nfpm directly and drifted from the script: it set no
+# version and never built the shell, so packaging failed on every push.
 
 on:
   push:
     branches: [main]
     paths:
       - 'packaging/linux/**'
+      - 'platforms/linux/**'
       - 'crates/**'
       - 'apps/**'
       - 'Cargo.toml'
@@ -19,6 +23,7 @@ on:
   pull_request:
     paths:
       - 'packaging/linux/**'
+      - 'platforms/linux/**'
   workflow_dispatch:
 
 env:
@@ -35,53 +40,39 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build release binaries
+      - name: Install the GTK4 headers and nfpm
+        # GTK is not optional: the package ships the shell, and the shell links
+        # against the system GTK.
         run: |
-          cargo build --release \
-            -p gguf-engine-daemon \
-            -p gguf-engine-cli \
-            -p gguf-engine-runtime-worker
-
-      - name: Install nfpm
-        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev pkg-config
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
-      - name: Build .deb and .rpm
-        run: |
-          mkdir -p dist
-          nfpm package --config packaging/linux/nfpm.yaml --packager deb --target dist/
-          nfpm package --config packaging/linux/nfpm.yaml --packager rpm --target dist/
-          ls -l dist/
+      - name: Build both packages
+        # One script, the same one README.md tells a human to run. It builds the
+        # release binaries, the GTK shell, both packages, and fails if the .deb
+        # is missing any expected file.
+        run: bash packaging/linux/build-packages.sh
 
-      - name: Verify the .deb file list
-        # The package must contain the three binaries, the PATH wrapper and the
-        # documentation - and nothing else. A stray file here means the layout
-        # drifted from what packaging/linux/README.md promises.
+      - name: Verify the .rpm file list
         run: |
-          deb=$(ls dist/*.deb)
-          dpkg -c "$deb" > deb-contents.txt
-          cat deb-contents.txt
+          rpm="$(ls dist/*.rpm)"
+          rpm -qlp "$rpm" > rpm-contents.txt || sudo apt-get install -y rpm
+          rpm -qlp "$rpm" > rpm-contents.txt
+          cat rpm-contents.txt
           for expected in \
-            ./usr/lib/gguf-ai-engine/gguf-core \
-            ./usr/lib/gguf-ai-engine/gguf \
-            ./usr/lib/gguf-ai-engine/gguf-worker \
-            ./usr/bin/gguf \
-            ./usr/share/applications/gguf-ai-engine.desktop
+            /usr/lib/gguf-ai-engine/gguf-core \
+            /usr/lib/gguf-ai-engine/gguf \
+            /usr/lib/gguf-ai-engine/gguf-worker \
+            /usr/lib/gguf-ai-engine/gguf-ai-engine-ui \
+            /usr/bin/gguf
           do
-            grep -qF "$expected" deb-contents.txt || {
+            grep -qF "$expected" rpm-contents.txt || {
               echo "missing from the package: $expected"
               exit 1
             }
           done
-
-      - name: Verify the .rpm file list
-        run: |
-          rpm=$(ls dist/*.rpm)
-          rpm -qlp "$rpm" > rpm-contents.txt || sudo apt-get install -y rpm
-          rpm -qlp "$rpm" > rpm-contents.txt
-          cat rpm-contents.txt
-          grep -qF '/usr/lib/gguf-ai-engine/gguf-core' rpm-contents.txt
 
       - name: Install and run the CLI
         # The real test: install the package and use it. A package that lists the

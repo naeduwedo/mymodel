@@ -33,16 +33,23 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Build the core (the shell tests drive the real daemon)
-        run: cargo build -p gguf-engine-daemon
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Restore (the stub check needs protoc from Grpc.Tools)
+        # generate-csharp-protos.ps1 takes protoc from the Grpc.Tools NuGet
+        # package, so restore has to happen before the check - not after, which
+        # is why this step failed on every push.
+        working-directory: platforms/windows/GgufAiEngine.Shell
+        run: dotnet restore
 
       - name: Check committed C# stubs match proto/
         shell: pwsh
         run: ./scripts/generate-csharp-protos.ps1 -Check
 
-      - name: Restore
-        working-directory: platforms/windows/GgufAiEngine.Shell
-        run: dotnet restore
+      - name: Build the core (the shell tests drive the real daemon)
+        run: cargo build -p gguf-engine-daemon
 
       - name: Build the shell
         working-directory: platforms/windows/GgufAiEngine.Shell
@@ -71,8 +78,7 @@ jobs:
 
       - name: Build and verify the shell headlessly
         # verify.sh starts a real core, launches the shell under Xvfb, and fails
-        # unless the window survives without logging a critical error. This is
-        # what turns the Linux shell from "written" into "verified".
+        # unless the window survives without logging a critical error.
         run: bash platforms/linux/verify.sh
 
       - name: Shell build honours the lockfile
