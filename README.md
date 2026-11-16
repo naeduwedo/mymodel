@@ -7,6 +7,16 @@ Cross-platform local GGUF model manager and inference platform.
 - **Architecture:** [docs/architecture/overview.md](docs/architecture/overview.md)
 - **Decision records:** [docs/adr/](docs/adr/README.md)
 
+## Documentation
+
+- **[Build and usage manual](docs/BUILD-AND-USAGE.md)** — how to compile it, configure it,
+  and use every modality. Chinese edition; the English material is the README plus
+  [docs/architecture/](docs/architecture/).
+- [Architecture](docs/architecture/overview.md) — layering, data flow, and the per-area notes.
+- [Decision records](docs/adr/) — why the awkward parts are the way they are.
+- [Task status](docs/architecture/task-status.md) — what is finished, with the evidence.
+
+
 ## Status
 
 | Phase | State |

@@ -69,10 +69,15 @@ impl AppPaths {
     pub fn platform_root() -> Result<PathBuf, ConfigError> {
         let dirs = directories::BaseDirs::new()
             .ok_or_else(|| ConfigError::NoDataDirectory("no base directories available".into()))?;
+        // Local, not roaming, on Windows: this directory holds model weights
+        // (tens of gigabytes) and a roaming profile would try to sync them at
+        // every logon. spec 15.1 names %LOCALAPPDATA% for the same reason.
+        // On Linux both resolve to ~/.local/share, and on macOS to
+        // ~/Library/Application Support.
         let root = if cfg!(target_os = "macos") {
             dirs.data_dir().join("GGUF AI Engine")
         } else {
-            dirs.data_dir().join(APP_DIR_NAME)
+            dirs.data_local_dir().join(APP_DIR_NAME)
         };
         Ok(root)
     }
