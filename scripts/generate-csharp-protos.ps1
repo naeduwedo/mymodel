@@ -60,6 +60,15 @@ try {
     }
 
     if ($Check) {
+        # Compare normalised text, not raw bytes. .gitattributes checks .cs files
+        # out with CRLF while protoc writes LF, so a byte hash reported "out of
+        # date" on every Windows CI run while the content was identical - drift
+        # and a line-ending difference must not look the same.
+        $normalise = {
+            param($path)
+            [System.IO.File]::ReadAllText($path).Replace("`r`n", "`n")
+        }
+
         $drift = @()
         foreach ($file in Get-ChildItem $temp -Filter '*.cs') {
             $committed = Join-Path $outDir $file.Name
@@ -68,9 +77,9 @@ try {
                 continue
             }
 
-            $fresh = (Get-FileHash $file.FullName -Algorithm SHA256).Hash
-            $old = (Get-FileHash $committed -Algorithm SHA256).Hash
-            if ($fresh -ne $old) { $drift += "$($file.Name): differs from proto/" }
+            if ((& $normalise $file.FullName) -ne (& $normalise $committed)) {
+                $drift += "$($file.Name): differs from proto/"
+            }
         }
 
         if ($drift.Count -gt 0) {
