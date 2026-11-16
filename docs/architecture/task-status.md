@@ -483,7 +483,7 @@ already use, so no shell grows an HTTP client.
 | `proto/media.proto` + `MediaService` | done: image, video, speech, transcription |
 | `crates/multimodal::MediaEngine` | done: one implementation shared by gRPC and the HTTP gateway |
 | `crates/ipc/src/media.rs` | done: missing runtime -> `FAILED_PRECONDITION` with the probe's reason |
-| Windows Create page | done: prompt, size, Generate, Synthesise, status lines |
+| Windows Create page | done: image, video (with progress), music, speech |
 | Linux Create page | **not done** |
 
 Verified with UI Automation after selecting the page (a collapsed panel is not in
@@ -564,3 +564,32 @@ a ComfyUI install on this machine. No runtime ever called ComfyUI, but a path th
 reads `E:\ComfyUI\models\...` looks like a dependency. Music, speech and the Wan
 video model now live under the project's own runtime directory; the image path
 still borrows a checkpoint from there and should be moved the same way.
+## Follow-up - music in the shells, and weights moved home: **done**
+
+| Piece | State |
+| --- | --- |
+| `proto/media.proto` `GenerateMusic` | done |
+| `crates/ipc/src/media.rs` | done - CPU-bound CLI runs off the reactor |
+| C# client + Create page | done - Music section with prompt and duration |
+| Weights in the project tree | done - image, video, music, speech |
+
+```text
+$ gguf music --prompt 'soft ambient piano with rain' --duration 10
+wrote song.wav (1.3 MiB, 44100 Hz, 2 channel(s))
+
+# and through the shell, verified with UI Automation:
+Wrote 1722 KiB (44100 Hz, 2 ch) to C:\...\gguf-music-172101.wav
+```
+
+Verified after moving the weights: image 481 KB PNG in 10.5 s from a GGUF SD1.5,
+video loading our umt5 Q4_K_M (3479.75 MB) and our VAE (242.10 MB) - the whole
+video stack is 6.4 GB resident instead of 9.4 GB, and no path points at a ComfyUI
+install.
+
+### The stale-binary trap, hit again
+
+`GenerateMusic` returned FAILED_PRECONDITION at 0 s from the shell while the CLI
+worked. The core binary had not been rebuilt after the RPC was added, so the
+service was genuinely unimplemented in the running process. `cargo build -p
+gguf-engine-ipc` builds the library, not `gguf-core.exe`; the daemon needs its own
+build. Worth remembering: a UI failure at zero seconds is usually not the feature.

@@ -237,6 +237,32 @@ impl pb::media_service_server::MediaService for MediaService {
         Ok(Response::new(pb::SpeechReply { wav: speech.wav }))
     }
 
+    async fn generate_music(
+        &self,
+        request: Request<pb::MusicRequest>,
+    ) -> Result<Response<pb::MusicReply>, Status> {
+        let request = request.into_inner();
+
+        let mut music = gguf_engine_multimodal::MusicRequest::new(&request.prompt);
+        if request.duration_seconds > 0 {
+            music.duration_seconds = request.duration_seconds;
+        }
+
+        // The runtime is a CLI that blocks for the whole render, so it runs off
+        // the reactor rather than stalling every other request.
+        let engine = self.engine.clone();
+        let generated = tokio::task::spawn_blocking(move || engine.music(&music))
+            .await
+            .map_err(|error| Status::internal(format!("the music task failed: {error}")))
+            .and_then(|result| result.map_err(Self::status))?;
+
+        Ok(Response::new(pb::MusicReply {
+            wav: generated.wav,
+            sample_rate: generated.sample_rate,
+            channels: generated.channels,
+        }))
+    }
+
     async fn transcribe(
         &self,
         request: Request<pb::TranscriptionRequest>,

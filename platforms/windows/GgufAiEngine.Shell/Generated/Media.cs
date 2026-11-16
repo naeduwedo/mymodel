@@ -44,13 +44,17 @@ namespace Gguf.V1 {
             "Y2hSZXBseRILCgN3YXYYASABKAwiWwoUVHJhbnNjcmlwdGlvblJlcXVlc3QS",
             "DQoFYXVkaW8YASABKAwSEAoIZmlsZW5hbWUYAiABKAkSFQoIbGFuZ3VhZ2UY",
             "AyABKAlIAIgBAUILCglfbGFuZ3VhZ2UiIgoSVHJhbnNjcmlwdGlvblJlcGx5",
-            "EgwKBHRleHQYASABKAkymAIKDE1lZGlhU2VydmljZRI7Cg1HZW5lcmF0ZUlt",
-            "YWdlEhUuZ2d1Zi52MS5JbWFnZVJlcXVlc3QaEy5nZ3VmLnYxLkltYWdlUmVw",
-            "bHkSRQoNR2VuZXJhdGVWaWRlbxIVLmdndWYudjEuVmlkZW9SZXF1ZXN0Ghsu",
-            "Z2d1Zi52MS5WaWRlb1Byb2dyZXNzRXZlbnQwARI6CgpTeW50aGVzaXNlEhYu",
-            "Z2d1Zi52MS5TcGVlY2hSZXF1ZXN0GhQuZ2d1Zi52MS5TcGVlY2hSZXBseRJI",
-            "CgpUcmFuc2NyaWJlEh0uZ2d1Zi52MS5UcmFuc2NyaXB0aW9uUmVxdWVzdBob",
-            "LmdndWYudjEuVHJhbnNjcmlwdGlvblJlcGx5YgZwcm90bzM="));
+            "EgwKBHRleHQYASABKAkiOAoMTXVzaWNSZXF1ZXN0Eg4KBnByb21wdBgBIAEo",
+            "CRIYChBkdXJhdGlvbl9zZWNvbmRzGAIgASgNIkAKCk11c2ljUmVwbHkSCwoD",
+            "d2F2GAEgASgMEhMKC3NhbXBsZV9yYXRlGAIgASgNEhAKCGNoYW5uZWxzGAMg",
+            "ASgNMtUCCgxNZWRpYVNlcnZpY2USOwoNR2VuZXJhdGVJbWFnZRIVLmdndWYu",
+            "djEuSW1hZ2VSZXF1ZXN0GhMuZ2d1Zi52MS5JbWFnZVJlcGx5EkUKDUdlbmVy",
+            "YXRlVmlkZW8SFS5nZ3VmLnYxLlZpZGVvUmVxdWVzdBobLmdndWYudjEuVmlk",
+            "ZW9Qcm9ncmVzc0V2ZW50MAESOgoKU3ludGhlc2lzZRIWLmdndWYudjEuU3Bl",
+            "ZWNoUmVxdWVzdBoULmdndWYudjEuU3BlZWNoUmVwbHkSSAoKVHJhbnNjcmli",
+            "ZRIdLmdndWYudjEuVHJhbnNjcmlwdGlvblJlcXVlc3QaGy5nZ3VmLnYxLlRy",
+            "YW5zY3JpcHRpb25SZXBseRI7Cg1HZW5lcmF0ZU11c2ljEhUuZ2d1Zi52MS5N",
+            "dXNpY1JlcXVlc3QaEy5nZ3VmLnYxLk11c2ljUmVwbHliBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -62,7 +66,9 @@ namespace Gguf.V1 {
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.SpeechRequest), global::Gguf.V1.SpeechRequest.Parser, new[]{ "Text" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.SpeechReply), global::Gguf.V1.SpeechReply.Parser, new[]{ "Wav" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.TranscriptionRequest), global::Gguf.V1.TranscriptionRequest.Parser, new[]{ "Audio", "Filename", "Language" }, new[]{ "Language" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.TranscriptionReply), global::Gguf.V1.TranscriptionReply.Parser, new[]{ "Text" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.TranscriptionReply), global::Gguf.V1.TranscriptionReply.Parser, new[]{ "Text" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.MusicRequest), global::Gguf.V1.MusicRequest.Parser, new[]{ "Prompt", "DurationSeconds" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.MusicReply), global::Gguf.V1.MusicReply.Parser, new[]{ "Wav", "SampleRate", "Channels" }, null, null, null, null)
           }));
     }
     #endregion
@@ -2989,6 +2995,522 @@ namespace Gguf.V1 {
             break;
           case 10: {
             Text = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class MusicRequest : pb::IMessage<MusicRequest>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<MusicRequest> _parser = new pb::MessageParser<MusicRequest>(() => new MusicRequest());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<MusicRequest> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[9]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public MusicRequest() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public MusicRequest(MusicRequest other) : this() {
+      prompt_ = other.prompt_;
+      durationSeconds_ = other.durationSeconds_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public MusicRequest Clone() {
+      return new MusicRequest(this);
+    }
+
+    /// <summary>Field number for the "prompt" field.</summary>
+    public const int PromptFieldNumber = 1;
+    private string prompt_ = "";
+    /// <summary>
+    /// What to generate, in English - the model's prompt language.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Prompt {
+      get { return prompt_; }
+      set {
+        prompt_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "duration_seconds" field.</summary>
+    public const int DurationSecondsFieldNumber = 2;
+    private uint durationSeconds_;
+    /// <summary>
+    /// Length in seconds.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint DurationSeconds {
+      get { return durationSeconds_; }
+      set {
+        durationSeconds_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as MusicRequest);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(MusicRequest other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Prompt != other.Prompt) return false;
+      if (DurationSeconds != other.DurationSeconds) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Prompt.Length != 0) hash ^= Prompt.GetHashCode();
+      if (DurationSeconds != 0) hash ^= DurationSeconds.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Prompt.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Prompt);
+      }
+      if (DurationSeconds != 0) {
+        output.WriteRawTag(16);
+        output.WriteUInt32(DurationSeconds);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Prompt.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Prompt);
+      }
+      if (DurationSeconds != 0) {
+        output.WriteRawTag(16);
+        output.WriteUInt32(DurationSeconds);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Prompt.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Prompt);
+      }
+      if (DurationSeconds != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(DurationSeconds);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(MusicRequest other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Prompt.Length != 0) {
+        Prompt = other.Prompt;
+      }
+      if (other.DurationSeconds != 0) {
+        DurationSeconds = other.DurationSeconds;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Prompt = input.ReadString();
+            break;
+          }
+          case 16: {
+            DurationSeconds = input.ReadUInt32();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Prompt = input.ReadString();
+            break;
+          }
+          case 16: {
+            DurationSeconds = input.ReadUInt32();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class MusicReply : pb::IMessage<MusicReply>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<MusicReply> _parser = new pb::MessageParser<MusicReply>(() => new MusicReply());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<MusicReply> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[10]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public MusicReply() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public MusicReply(MusicReply other) : this() {
+      wav_ = other.wav_;
+      sampleRate_ = other.sampleRate_;
+      channels_ = other.channels_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public MusicReply Clone() {
+      return new MusicReply(this);
+    }
+
+    /// <summary>Field number for the "wav" field.</summary>
+    public const int WavFieldNumber = 1;
+    private pb::ByteString wav_ = pb::ByteString.Empty;
+    /// <summary>
+    /// WAV bytes.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pb::ByteString Wav {
+      get { return wav_; }
+      set {
+        wav_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "sample_rate" field.</summary>
+    public const int SampleRateFieldNumber = 2;
+    private uint sampleRate_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint SampleRate {
+      get { return sampleRate_; }
+      set {
+        sampleRate_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "channels" field.</summary>
+    public const int ChannelsFieldNumber = 3;
+    private uint channels_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint Channels {
+      get { return channels_; }
+      set {
+        channels_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as MusicReply);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(MusicReply other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Wav != other.Wav) return false;
+      if (SampleRate != other.SampleRate) return false;
+      if (Channels != other.Channels) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Wav.Length != 0) hash ^= Wav.GetHashCode();
+      if (SampleRate != 0) hash ^= SampleRate.GetHashCode();
+      if (Channels != 0) hash ^= Channels.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Wav.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteBytes(Wav);
+      }
+      if (SampleRate != 0) {
+        output.WriteRawTag(16);
+        output.WriteUInt32(SampleRate);
+      }
+      if (Channels != 0) {
+        output.WriteRawTag(24);
+        output.WriteUInt32(Channels);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Wav.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteBytes(Wav);
+      }
+      if (SampleRate != 0) {
+        output.WriteRawTag(16);
+        output.WriteUInt32(SampleRate);
+      }
+      if (Channels != 0) {
+        output.WriteRawTag(24);
+        output.WriteUInt32(Channels);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Wav.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeBytesSize(Wav);
+      }
+      if (SampleRate != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(SampleRate);
+      }
+      if (Channels != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(Channels);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(MusicReply other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Wav.Length != 0) {
+        Wav = other.Wav;
+      }
+      if (other.SampleRate != 0) {
+        SampleRate = other.SampleRate;
+      }
+      if (other.Channels != 0) {
+        Channels = other.Channels;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Wav = input.ReadBytes();
+            break;
+          }
+          case 16: {
+            SampleRate = input.ReadUInt32();
+            break;
+          }
+          case 24: {
+            Channels = input.ReadUInt32();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Wav = input.ReadBytes();
+            break;
+          }
+          case 16: {
+            SampleRate = input.ReadUInt32();
+            break;
+          }
+          case 24: {
+            Channels = input.ReadUInt32();
             break;
           }
         }

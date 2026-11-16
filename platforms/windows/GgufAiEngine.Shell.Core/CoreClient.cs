@@ -210,6 +210,24 @@ public sealed class CoreClient : IDisposable
         return reply.Wav.ToByteArray();
     }
 
+    /// <summary>Generate music or a sound effect, returning WAV bytes.</summary>
+    /// <remarks>
+    /// Blocks for the render: seconds to a couple of minutes. The runtime is a
+    /// one-shot CLI, so there is no progress channel to subscribe to.
+    /// </remarks>
+    public async Task<MusicReply> GenerateMusicAsync(
+        string prompt,
+        uint durationSeconds,
+        CancellationToken cancellationToken = default)
+    {
+        var media = new MediaService.MediaServiceClient(_channel);
+        return await media
+            .GenerateMusicAsync(
+                new MusicRequest { Prompt = prompt, DurationSeconds = durationSeconds },
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     /// <summary>Transcribe an audio file.</summary>
     public async Task<string> TranscribeAsync(
         byte[] audio,

@@ -205,6 +205,15 @@
                         <ProgressBar x:Name="VideoProgressBar" Minimum="0" Maximum="100" Value="0" />
                         <TextBlock x:Name="VideoStatus" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
 
+                        <TextBlock Text="Music" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBox x:Name="MusicPromptBox" PlaceholderText="Describe the music (English)..." />
+                        <Grid ColumnDefinitions="Auto,100,Auto,*" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0" Text="Seconds" VerticalAlignment="Center" />
+                            <NumberBox x:Name="MusicDurationBox" Grid.Column="1" Value="10" Minimum="1" Maximum="600" SpinButtonPlacementMode="Compact" />
+                            <Button x:Name="GenerateMusicButton" Grid.Column="2" Content="Generate music" Click="OnGenerateMusicClicked" />
+                            <TextBlock x:Name="MusicStatus" Grid.Column="3" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                        </Grid>
+
                         <TextBlock Text="Speech" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBox x:Name="SpeechTextBox" PlaceholderText="Text to speak..." />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">

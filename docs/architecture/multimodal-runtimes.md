@@ -224,6 +224,7 @@ count, so the UI was less informative than the CLI. It now shows both.
 | `POST /v1/images/generations` | proxies to the diffusion server; `n > 1` is refused rather than silently reduced |
 | `POST /v1/audio/transcriptions` | multipart, as OpenAI clients send it |
 | `POST /v1/audio/speech` | returns `audio/wav`; `mp3` is refused rather than mislabelled |
+| `MediaService.GenerateMusic` | gRPC; used by the shells, since they speak gRPC and not HTTP |
 
 A missing runtime is **503 `capability_not_available`** with the probe's reason,
 not 500 and not an empty success.

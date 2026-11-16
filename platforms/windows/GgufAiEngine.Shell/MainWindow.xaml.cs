@@ -414,6 +414,52 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void OnGenerateMusicClicked(object sender, RoutedEventArgs e)
+    {
+        if (_client is null)
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Not connected", "Start the core first.");
+            return;
+        }
+
+        var prompt = MusicPromptBox.Text;
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Nothing to play", "Describe the music first.");
+            return;
+        }
+
+        GenerateMusicButton.IsEnabled = false;
+        MusicStatus.Text = "Generating...";
+        CreateBar.IsOpen = false;
+
+        try
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            deadline.CancelAfter(TimeSpan.FromMinutes(15));
+
+            var reply = await _client.GenerateMusicAsync(
+                prompt,
+                (uint)MusicDurationBox.Value,
+                deadline.Token);
+
+            var path = Path.Combine(Path.GetTempPath(), $"gguf-music-{DateTime.Now:HHmmss}.wav");
+            await File.WriteAllBytesAsync(path, reply.Wav.ToByteArray(), CancellationToken.None);
+
+            MusicStatus.Text =
+                $"Wrote {reply.Wav.Length / 1024} KiB ({reply.SampleRate} Hz, {reply.Channels} ch) to {path}";
+        }
+        catch (Exception ex)
+        {
+            MusicStatus.Text = "Failed.";
+            ShowCreateMessage(InfoBarSeverity.Error, "Music generation failed", ex.Message);
+        }
+        finally
+        {
+            GenerateMusicButton.IsEnabled = true;
+        }
+    }
+
     private async void OnSpeakClicked(object sender, RoutedEventArgs e)
     {
         if (_client is null)

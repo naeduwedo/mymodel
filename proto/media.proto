@@ -89,6 +89,20 @@ message TranscriptionReply {
   string text = 1;
 }
 
+message MusicRequest {
+  // What to generate, in English - the model's prompt language.
+  string prompt = 1;
+  // Length in seconds.
+  uint32 duration_seconds = 2;
+}
+
+message MusicReply {
+  // WAV bytes.
+  bytes wav = 1;
+  uint32 sample_rate = 2;
+  uint32 channels = 3;
+}
+
 service MediaService {
   // Image generation. FAILED_PRECONDITION when no diffusion runtime is available.
   rpc GenerateImage(ImageRequest) returns (ImageReply);
@@ -99,4 +113,6 @@ service MediaService {
   rpc Synthesise(SpeechRequest) returns (SpeechReply);
   // Speech recognition.
   rpc Transcribe(TranscriptionRequest) returns (TranscriptionReply);
+  // Music or sound-effect generation. Seconds to a couple of minutes.
+  rpc GenerateMusic(MusicRequest) returns (MusicReply);
 }
