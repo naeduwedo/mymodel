@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # Architecture decision records
 
 Format: context → decision → consequences. The first seven are transcribed from

@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-007-core-worker-isolation.zh.md)
+
 # ADR-007 — Core and inference workers are separate processes
 
 **Status:** Accepted (spec §16, ADR-007)

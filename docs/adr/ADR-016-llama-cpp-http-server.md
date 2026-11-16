@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-016-llama-cpp-http-server.zh.md)
+
 # ADR-016 - llama.cpp integration through its HTTP server, not FFI
 
 **Status:** Accepted (implementation decision for Task 6)

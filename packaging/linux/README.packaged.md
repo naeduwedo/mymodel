@@ -1,3 +1,5 @@
+> **English** | [中文](README.packaged.zh.md)
+
 # GGUF AI Engine (packaged)
 
 Installed files:

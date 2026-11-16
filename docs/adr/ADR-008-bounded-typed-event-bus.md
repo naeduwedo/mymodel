@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-008-bounded-typed-event-bus.zh.md)
+
 # ADR-008 — Bounded, typed, replayable event bus
 
 **Status:** Accepted (implementation decision for Task 1)

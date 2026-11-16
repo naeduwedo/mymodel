@@ -1,3 +1,5 @@
+> **English** | [中文](ipc-and-storage.zh.md)
+
 # Architecture — IPC, database and the Task 2 core
 
 > Normative source: [`GGUF-AI-Engine-Engineering-Spec.md`](../../GGUF-AI-Engine-Engineering-Spec.md) §3, §9–§10.

@@ -1,3 +1,5 @@
+> **English** | [中文](native-shells.zh.md)
+
 # Native UI shells (Task 3)
 
 > Normative source: spec §2.1 (platform UI), §4 (information architecture).

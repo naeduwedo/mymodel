@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-002-gguf-first.zh.md)
+
 # ADR-002 — GGUF-first, not GGUF-only
 
 **Status:** Accepted (spec §16, ADR-002)

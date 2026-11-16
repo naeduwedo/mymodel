@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # Windows packaging (MSIX)
 
 Status: **built and verified on this machine** (Windows 11, Windows SDK

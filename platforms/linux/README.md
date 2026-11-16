@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # Linux shell (GTK4) - built and verified
 
 A real GTK4/gtk4-rs shell, not a placeholder: it builds an

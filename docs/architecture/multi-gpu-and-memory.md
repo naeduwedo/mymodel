@@ -1,3 +1,5 @@
+> **English** | [中文](multi-gpu-and-memory.zh.md)
+
 # Multi-GPU scheduling and the memory orchestrator (Task 7)
 
 > Normative source: spec §5 (multi-GPU) and §6 (memory orchestrator).

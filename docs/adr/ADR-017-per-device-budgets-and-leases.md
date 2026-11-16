@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-017-per-device-budgets-and-leases.zh.md)
+
 # ADR-017 - Per-device budgets and expiring leases, never a summed pool
 
 **Status:** Accepted (implementation decision for Task 7)

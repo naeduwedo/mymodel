@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-010-unsafe-windows-pipe-acl.zh.md)
+
 # ADR-010 — Narrow `unsafe` exception for the Windows pipe DACL
 
 **Status:** Accepted (implementation decision for Task 2)

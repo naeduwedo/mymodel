@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # GGUF AI Engine
 
 Cross-platform local GGUF model manager and inference platform.
@@ -23,11 +25,13 @@ Cross-platform local GGUF model manager and inference platform.
 | --- | --- |
 | Task 1 — Repository bootstrap | **done** (workspace, config, event bus, lifecycle, CLI, daemon, CI, docs) |
 | Task 2 — Protocol + core | **done** (protobuf/gRPC, named-pipe & Unix-socket IPC, health, event stream, SQLite migrations) |
-| Task 3 — Native UI shells | **partial** (Windows shell implemented + tested; Linux written, unverified; macOS planned) |
+| Task 3 — Native UI shells | **partial** (Windows shell implemented + tested in CI; Linux shell builds and runs headless under Xvfb; macOS planned) |
 | Task 4 — Hardware inventory | **done** (CPU/RAM/storage, NVIDIA verified on real 2-GPU machine, AMD experimental, Apple unverified) |
 | Task 5 — GGUF + model hub | **done** (defensive parser, Hub search/download/verify/resume, manifest, registry) |
-| Task 6 — llama.cpp adapter | planned |
-| Task 7 — Multi-GPU + memory | planned |
+| Task 6 — llama.cpp adapter | **done** (streaming chat, vision, embeddings over llama-server, ADR-016) |
+| Task 7 — Multi-GPU + memory | **done** (per-device budgets and leases, planner, benchmark; ADR-017) |
+| Task 8 — Multimodal runtimes | **done** (image, video, ASR, TTS, music and SFX on four standalone C++ runtimes) |
+| Task 9 — Packaging | **done** (.deb and .rpm built and installed in CI, GTK4 shell inside) |
 
 Nothing is reported as "supported" until it has a real implementation behind it
 (spec §18). `gguf doctor` prints the same feature list the UIs use, and every

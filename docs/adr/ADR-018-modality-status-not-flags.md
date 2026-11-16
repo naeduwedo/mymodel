@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-018-modality-status-not-flags.zh.md)
+
 # ADR-018 - Modalities are declared with a status and a reason, never a flag
 
 **Status:** Accepted (implementation decision for Task 8)

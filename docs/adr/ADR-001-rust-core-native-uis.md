@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-001-rust-core-native-uis.zh.md)
+
 # ADR-001 — Rust core with three native UIs
 
 **Status:** Accepted (spec §16, ADR-001)

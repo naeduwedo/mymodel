@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # Linux packaging (deb / rpm / AppImage) - **recipe only, not built**
 
 Status: **built, installed and run** (Ubuntu 26.04 under WSL, nfpm, Rust 1.100).

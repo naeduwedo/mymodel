@@ -1,3 +1,5 @@
+> **English** | [中文](multimodal-runtimes.zh.md)
+
 # Non-LLM runtimes: image, video, speech and music (spec §2.3, §17 Task 8)
 
 > Normative source: spec §2.3 (runtime adapters), §17 Task 8 ("add Image, Video,

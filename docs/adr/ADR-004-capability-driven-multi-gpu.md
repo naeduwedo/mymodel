@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-004-capability-driven-multi-gpu.zh.md)
+
 # ADR-004 — Capability-driven multi-GPU
 
 **Status:** Accepted (spec §16, ADR-004)

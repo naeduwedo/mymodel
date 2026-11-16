@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-015-download-integrity.zh.md)
+
 # ADR-015 — Download integrity: verify before ready, commit atomically
 
 **Status:** Accepted (implementation decision for Task 5)

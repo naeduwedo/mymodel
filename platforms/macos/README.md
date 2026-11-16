@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # macOS shell (SwiftUI + AppKit) — **not implemented**
 
 Status: **planned**. There is deliberately no Swift source here yet.

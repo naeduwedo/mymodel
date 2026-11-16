@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-011-blocking-sqlite-wrapper.zh.md)
+
 # ADR-011 — SQLite access through a blocking wrapper, not an async driver
 
 **Status:** Accepted (implementation decision for Task 2)

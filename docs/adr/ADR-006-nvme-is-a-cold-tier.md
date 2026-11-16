@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-006-nvme-is-a-cold-tier.zh.md)
+
 # ADR-006 — NVMe is a cold tier
 
 **Status:** Accepted (spec §16, ADR-006)

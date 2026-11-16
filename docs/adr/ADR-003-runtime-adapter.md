@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-003-runtime-adapter.zh.md)
+
 # ADR-003 — Runtime adapters, no home-grown kernels
 
 **Status:** Accepted (spec §16, ADR-003)

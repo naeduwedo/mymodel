@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-014-defensive-gguf-parsing.zh.md)
+
 # ADR-014 — GGUF parsing: bounded prefix read, no mmap
 
 **Status:** Accepted (implementation decision for Task 5)

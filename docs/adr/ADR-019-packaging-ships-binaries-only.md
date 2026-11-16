@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-019-packaging-ships-binaries-only.zh.md)
+
 # ADR-019 - Packaging ships binaries and recipes, never user data or runtimes
 
 **Status:** Accepted (implementation decision for Task 9)

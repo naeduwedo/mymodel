@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # scripts/
 
 Developer helper scripts. Keep them small and cross-platform-aware; CI calls

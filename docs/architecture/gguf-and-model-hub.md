@@ -1,3 +1,5 @@
+> **English** | [中文](gguf-and-model-hub.zh.md)
+
 # GGUF parsing and the model Hub (Task 5)
 
 > Normative source: spec §7 (GGUF parser, manifest, Hub, compatibility).

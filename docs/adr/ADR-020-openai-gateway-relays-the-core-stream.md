@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-020-openai-gateway-relays-the-core-stream.zh.md)
+
 # ADR-020 - The OpenAI gateway relays the core's stream instead of loading models
 
 **Status:** Accepted (implementation decision for the `http_api` follow-up)

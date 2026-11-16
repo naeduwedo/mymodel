@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # platforms/
 
 Native UI shells (Task 3). Each directory holds one platform implementation;

@@ -1,3 +1,5 @@
+> **English** | [中文](README.zh.md)
+
 # macOS packaging (DMG) - **recipe only, not built**
 
 Status: **unverified**. No macOS machine was available. The macOS shell itself

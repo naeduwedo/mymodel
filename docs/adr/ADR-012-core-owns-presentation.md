@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-012-core-owns-presentation.zh.md)
+
 # ADR-012 — The core owns presentation, the shells only render
 
 **Status:** Accepted (implementation decision for Task 3)

@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-009-strict-typed-configuration.zh.md)
+
 # ADR-009 — Strict, typed configuration with path containment
 
 **Status:** Accepted (implementation decision for Task 1)

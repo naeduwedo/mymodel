@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-013-cli-based-hardware-probes.zh.md)
+
 # ADR-013 — Probe GPUs through vendor CLIs, not vendor FFI
 
 **Status:** Accepted (implementation decision for Task 4)

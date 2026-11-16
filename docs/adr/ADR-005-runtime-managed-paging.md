@@ -1,3 +1,5 @@
+> **English** | [中文](ADR-005-runtime-managed-paging.zh.md)
+
 # ADR-005 — Runtime-managed paging before engine-managed paging
 
 **Status:** Accepted (spec §16, ADR-005)

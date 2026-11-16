@@ -1,3 +1,5 @@
+> **English** | [中文](hardware-inventory.zh.md)
+
 # Hardware inventory (Task 4)
 
 > Normative source: spec §4.2 (Hardware page), §5.2 (device model), §5.3 (topology).
