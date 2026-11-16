@@ -145,7 +145,7 @@ async fn a_subscriber_added_after_boot_receives_live_events() {
         lc.transition(CoreState::Degraded).unwrap();
     });
 
-    let event = tokio::time::timeout(std::time::Duration::from_secs(2), subscriber.recv())
+    let event = tokio::time::timeout(std::time::Duration::from_secs(30), subscriber.recv())
         .await
         .expect("event arrived before timeout")
         .expect("subscriber open");

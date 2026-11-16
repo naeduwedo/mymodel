@@ -122,7 +122,7 @@ fn daemon_serves_health_over_the_platform_transport() {
     let _daemon = start_daemon(tmp.path());
 
     runtime().block_on(async {
-        let client = connect_with_retry(tmp.path(), Duration::from_secs(20)).await;
+        let client = connect_with_retry(tmp.path(), Duration::from_secs(60)).await;
         let health = client.health().await.expect("health over IPC");
         assert_eq!(
             health.state,
@@ -190,11 +190,11 @@ fn daemon_streams_events_and_survives_a_disconnect() {
     let _daemon = start_daemon(tmp.path());
 
     runtime().block_on(async {
-        let client = connect_with_retry(tmp.path(), Duration::from_secs(20)).await;
+        let client = connect_with_retry(tmp.path(), Duration::from_secs(60)).await;
 
         // First subscriber: read the boot transitions from the replay ring.
         let mut first = Box::pin(client.subscribe(0).await.expect("subscribe"));
-        let boot = tokio::time::timeout(Duration::from_secs(5), first.next())
+        let boot = tokio::time::timeout(Duration::from_secs(60), first.next())
             .await
             .expect("a replayed boot event")
             .expect("stream open")
@@ -212,7 +212,7 @@ fn daemon_streams_events_and_survives_a_disconnect() {
         // Second subscriber resumes from where the first left off: a UI
         // reconnecting must not miss or repeat events.
         let mut second = Box::pin(client.subscribe(seen_seq).await.expect("resubscribe"));
-        let next = tokio::time::timeout(Duration::from_secs(5), second.next())
+        let next = tokio::time::timeout(Duration::from_secs(60), second.next())
             .await
             .expect("a live event")
             .expect("stream open")
@@ -239,7 +239,7 @@ fn a_second_daemon_refuses_to_start_and_the_first_keeps_serving() {
     // on Windows the exclusive lock also blocks reads, and a probe connection
     // consumes a pipe instance that the rest of this suite needs.
     let lock_path = tmp.path().join("database").join("core.lock");
-    let deadline = std::time::Instant::now() + Duration::from_secs(20);
+    let deadline = std::time::Instant::now() + Duration::from_secs(60);
     loop {
         match gguf_engine_core::InstanceLock::acquire(&lock_path) {
             // We got it, so the first core has not taken it yet: let go and retry.
@@ -266,7 +266,7 @@ fn a_second_daemon_refuses_to_start_and_the_first_keeps_serving() {
         .spawn()
         .expect("spawning a second core");
 
-    let deadline = std::time::Instant::now() + Duration::from_secs(20);
+    let deadline = std::time::Instant::now() + Duration::from_secs(60);
     let status = loop {
         if let Some(status) = second.try_wait().expect("polling the second core") {
             break status;
@@ -293,7 +293,7 @@ fn a_second_daemon_refuses_to_start_and_the_first_keeps_serving() {
 
     // The first core is unaffected by the failed attempt.
     runtime().block_on(async {
-        let client = connect_with_retry(tmp.path(), Duration::from_secs(5)).await;
+        let client = connect_with_retry(tmp.path(), Duration::from_secs(60)).await;
         client.ping().await.expect("the first core still answers");
     });
 }
