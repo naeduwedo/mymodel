@@ -318,6 +318,102 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void OnGenerateVideoClicked(object sender, RoutedEventArgs e)
+    {
+        if (_client is null)
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Not connected", "Start the core first.");
+            return;
+        }
+
+        var prompt = VideoPromptBox.Text;
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            ShowCreateMessage(InfoBarSeverity.Warning, "Nothing to show", "Describe the clip first.");
+            return;
+        }
+
+        GenerateVideoButton.IsEnabled = false;
+        VideoProgressBar.Value = 0;
+        VideoStatus.Text = "Starting...";
+        CreateBar.IsOpen = false;
+
+        try
+        {
+            var request = new VideoRequest
+            {
+                Prompt = prompt,
+                Frames = (uint)VideoFramesBox.Value,
+                Steps = (uint)VideoStepsBox.Value,
+                Fps = (uint)VideoFpsBox.Value,
+                Width = (uint)ImageWidthBox.Value,
+                Height = (uint)ImageHeightBox.Value,
+            };
+
+            // Minutes, not seconds.
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            deadline.CancelAfter(TimeSpan.FromHours(1));
+
+            await foreach (var progress in _client.GenerateVideoAsync(request, deadline.Token))
+            {
+                if (progress.Clip is { } clip)
+                {
+                    var extension = clip.MimeType == "video/mp4" ? "mp4" : "webm";
+                    var path = Path.Combine(
+                        Path.GetTempPath(),
+                        $"gguf-clip-{DateTime.Now:HHmmss}.{extension}");
+                    await File.WriteAllBytesAsync(
+                        path,
+                        clip.Video.ToByteArray(),
+                        CancellationToken.None);
+
+                    VideoProgressBar.Value = 100;
+                    VideoStatus.Text =
+                        $"Wrote {clip.Video.Length / 1024} KiB ({clip.Frames} frames) to {path}";
+                }
+                else if (progress.HasError)
+                {
+                    VideoStatus.Text = "Failed.";
+                    ShowCreateMessage(InfoBarSeverity.Error, "Video generation failed", progress.Error);
+                }
+                else
+                {
+                    // The runtime's own stage and counts, not a made-up percentage.
+                    if (progress.HasTotal && progress.Total > 0 && progress.HasCompleted)
+                    {
+                        VideoProgressBar.Value = 100.0 * progress.Completed / progress.Total;
+                    }
+                    else if (progress.QueuePosition > 0)
+                    {
+                        VideoProgressBar.Value = 0;
+                    }
+
+                    // Same information the CLI shows: stage, step count when the
+                    // runtime reports one, and elapsed time. A spinner alone cannot
+                    // tell a working render from a hung one.
+                    var stage = string.IsNullOrEmpty(progress.Stage) ? progress.Status : progress.Stage;
+                    var detail = string.IsNullOrEmpty(progress.Detail)
+                        ? string.Empty
+                        : $" - {progress.Detail}";
+                    var counts = progress.HasTotal && progress.Total > 0 && progress.HasCompleted
+                        ? $" {progress.Completed}/{progress.Total} {progress.Unit}"
+                        : string.Empty;
+                    VideoStatus.Text =
+                        $"{stage}{detail}{counts} ({progress.ElapsedMs / 1000}s)";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            VideoStatus.Text = "Failed.";
+            ShowCreateMessage(InfoBarSeverity.Error, "Video generation failed", ex.Message);
+        }
+        finally
+        {
+            GenerateVideoButton.IsEnabled = true;
+        }
+    }
+
     private async void OnSpeakClicked(object sender, RoutedEventArgs e)
     {
         if (_client is null)

@@ -29,18 +29,25 @@ namespace Gguf.V1 {
             "aWR0aBgDIAEoDRIOCgZoZWlnaHQYBCABKA0SDQoFc3RlcHMYBSABKA0SEQoE",
             "c2VlZBgGIAEoA0gBiAEBQhIKEF9uZWdhdGl2ZV9wcm9tcHRCBwoFX3NlZWQi",
             "OAoKSW1hZ2VSZXBseRILCgNwbmcYASABKAwSDQoFd2lkdGgYAiABKA0SDgoG",
-            "aGVpZ2h0GAMgASgNInYKDFZpZGVvUmVxdWVzdBIOCgZwcm9tcHQYASABKAkS",
-            "DQoFd2lkdGgYAiABKA0SDgoGaGVpZ2h0GAMgASgNEg4KBmZyYW1lcxgEIAEo",
-            "DRILCgNmcHMYBSABKA0SEQoEc2VlZBgGIAEoA0gAiAEBQgcKBV9zZWVkIj4K",
-            "ClZpZGVvUmVwbHkSDQoFdmlkZW8YASABKAwSEQoJbWltZV90eXBlGAIgASgJ",
-            "Eg4KBmZyYW1lcxgDIAEoDSIdCg1TcGVlY2hSZXF1ZXN0EgwKBHRleHQYASAB",
-            "KAkiGgoLU3BlZWNoUmVwbHkSCwoDd2F2GAEgASgMIlsKFFRyYW5zY3JpcHRp",
-            "b25SZXF1ZXN0Eg0KBWF1ZGlvGAEgASgMEhAKCGZpbGVuYW1lGAIgASgJEhUK",
-            "CGxhbmd1YWdlGAMgASgJSACIAQFCCwoJX2xhbmd1YWdlIiIKElRyYW5zY3Jp",
-            "cHRpb25SZXBseRIMCgR0ZXh0GAEgASgJMo4CCgxNZWRpYVNlcnZpY2USOwoN",
-            "R2VuZXJhdGVJbWFnZRIVLmdndWYudjEuSW1hZ2VSZXF1ZXN0GhMuZ2d1Zi52",
-            "MS5JbWFnZVJlcGx5EjsKDUdlbmVyYXRlVmlkZW8SFS5nZ3VmLnYxLlZpZGVv",
-            "UmVxdWVzdBoTLmdndWYudjEuVmlkZW9SZXBseRI6CgpTeW50aGVzaXNlEhYu",
+            "aGVpZ2h0GAMgASgNIoUBCgxWaWRlb1JlcXVlc3QSDgoGcHJvbXB0GAEgASgJ",
+            "Eg0KBXdpZHRoGAIgASgNEg4KBmhlaWdodBgDIAEoDRIOCgZmcmFtZXMYBCAB",
+            "KA0SCwoDZnBzGAUgASgNEhEKBHNlZWQYBiABKANIAIgBARINCgVzdGVwcxgH",
+            "IAEoDUIHCgVfc2VlZCI+CgpWaWRlb1JlcGx5Eg0KBXZpZGVvGAEgASgMEhEK",
+            "CW1pbWVfdHlwZRgCIAEoCRIOCgZmcmFtZXMYAyABKA0ingIKElZpZGVvUHJv",
+            "Z3Jlc3NFdmVudBIOCgZzdGF0dXMYASABKAkSDQoFc3RhZ2UYAiABKAkSDgoG",
+            "ZGV0YWlsGAMgASgJEhYKCWNvbXBsZXRlZBgEIAEoDUgAiAEBEhIKBXRvdGFs",
+            "GAUgASgNSAGIAQESEQoEdW5pdBgGIAEoCUgCiAEBEhIKCmVsYXBzZWRfbXMY",
+            "ByABKAQSFgoOcXVldWVfcG9zaXRpb24YCCABKA0SJgoEY2xpcBgJIAEoCzIT",
+            "LmdndWYudjEuVmlkZW9SZXBseUgDiAEBEhIKBWVycm9yGAogASgJSASIAQFC",
+            "DAoKX2NvbXBsZXRlZEIICgZfdG90YWxCBwoFX3VuaXRCBwoFX2NsaXBCCAoG",
+            "X2Vycm9yIh0KDVNwZWVjaFJlcXVlc3QSDAoEdGV4dBgBIAEoCSIaCgtTcGVl",
+            "Y2hSZXBseRILCgN3YXYYASABKAwiWwoUVHJhbnNjcmlwdGlvblJlcXVlc3QS",
+            "DQoFYXVkaW8YASABKAwSEAoIZmlsZW5hbWUYAiABKAkSFQoIbGFuZ3VhZ2UY",
+            "AyABKAlIAIgBAUILCglfbGFuZ3VhZ2UiIgoSVHJhbnNjcmlwdGlvblJlcGx5",
+            "EgwKBHRleHQYASABKAkymAIKDE1lZGlhU2VydmljZRI7Cg1HZW5lcmF0ZUlt",
+            "YWdlEhUuZ2d1Zi52MS5JbWFnZVJlcXVlc3QaEy5nZ3VmLnYxLkltYWdlUmVw",
+            "bHkSRQoNR2VuZXJhdGVWaWRlbxIVLmdndWYudjEuVmlkZW9SZXF1ZXN0Ghsu",
+            "Z2d1Zi52MS5WaWRlb1Byb2dyZXNzRXZlbnQwARI6CgpTeW50aGVzaXNlEhYu",
             "Z2d1Zi52MS5TcGVlY2hSZXF1ZXN0GhQuZ2d1Zi52MS5TcGVlY2hSZXBseRJI",
             "CgpUcmFuc2NyaWJlEh0uZ2d1Zi52MS5UcmFuc2NyaXB0aW9uUmVxdWVzdBob",
             "LmdndWYudjEuVHJhbnNjcmlwdGlvblJlcGx5YgZwcm90bzM="));
@@ -49,8 +56,9 @@ namespace Gguf.V1 {
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.ImageRequest), global::Gguf.V1.ImageRequest.Parser, new[]{ "Prompt", "NegativePrompt", "Width", "Height", "Steps", "Seed" }, new[]{ "NegativePrompt", "Seed" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.ImageReply), global::Gguf.V1.ImageReply.Parser, new[]{ "Png", "Width", "Height" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.VideoRequest), global::Gguf.V1.VideoRequest.Parser, new[]{ "Prompt", "Width", "Height", "Frames", "Fps", "Seed" }, new[]{ "Seed" }, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.VideoRequest), global::Gguf.V1.VideoRequest.Parser, new[]{ "Prompt", "Width", "Height", "Frames", "Fps", "Seed", "Steps" }, new[]{ "Seed" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.VideoReply), global::Gguf.V1.VideoReply.Parser, new[]{ "Video", "MimeType", "Frames" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.VideoProgressEvent), global::Gguf.V1.VideoProgressEvent.Parser, new[]{ "Status", "Stage", "Detail", "Completed", "Total", "Unit", "ElapsedMs", "QueuePosition", "Clip", "Error" }, new[]{ "Completed", "Total", "Unit", "Clip", "Error" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.SpeechRequest), global::Gguf.V1.SpeechRequest.Parser, new[]{ "Text" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.SpeechReply), global::Gguf.V1.SpeechReply.Parser, new[]{ "Wav" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gguf.V1.TranscriptionRequest), global::Gguf.V1.TranscriptionRequest.Parser, new[]{ "Audio", "Filename", "Language" }, new[]{ "Language" }, null, null, null),
@@ -793,6 +801,7 @@ namespace Gguf.V1 {
       frames_ = other.frames_;
       fps_ = other.fps_;
       seed_ = other.seed_;
+      steps_ = other.steps_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -889,6 +898,21 @@ namespace Gguf.V1 {
       _hasBits0 &= ~1;
     }
 
+    /// <summary>Field number for the "steps" field.</summary>
+    public const int StepsFieldNumber = 7;
+    private uint steps_;
+    /// <summary>
+    /// Sampling steps. 0 lets the runtime choose its default, which is slow.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint Steps {
+      get { return steps_; }
+      set {
+        steps_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -910,6 +934,7 @@ namespace Gguf.V1 {
       if (Frames != other.Frames) return false;
       if (Fps != other.Fps) return false;
       if (Seed != other.Seed) return false;
+      if (Steps != other.Steps) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -923,6 +948,7 @@ namespace Gguf.V1 {
       if (Frames != 0) hash ^= Frames.GetHashCode();
       if (Fps != 0) hash ^= Fps.GetHashCode();
       if (HasSeed) hash ^= Seed.GetHashCode();
+      if (Steps != 0) hash ^= Steps.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -965,6 +991,10 @@ namespace Gguf.V1 {
         output.WriteRawTag(48);
         output.WriteInt64(Seed);
       }
+      if (Steps != 0) {
+        output.WriteRawTag(56);
+        output.WriteUInt32(Steps);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -999,6 +1029,10 @@ namespace Gguf.V1 {
         output.WriteRawTag(48);
         output.WriteInt64(Seed);
       }
+      if (Steps != 0) {
+        output.WriteRawTag(56);
+        output.WriteUInt32(Steps);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -1026,6 +1060,9 @@ namespace Gguf.V1 {
       }
       if (HasSeed) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(Seed);
+      }
+      if (Steps != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(Steps);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1056,6 +1093,9 @@ namespace Gguf.V1 {
       }
       if (other.HasSeed) {
         Seed = other.Seed;
+      }
+      if (other.Steps != 0) {
+        Steps = other.Steps;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1100,6 +1140,10 @@ namespace Gguf.V1 {
             Seed = input.ReadInt64();
             break;
           }
+          case 56: {
+            Steps = input.ReadUInt32();
+            break;
+          }
         }
       }
     #endif
@@ -1141,6 +1185,10 @@ namespace Gguf.V1 {
           }
           case 48: {
             Seed = input.ReadInt64();
+            break;
+          }
+          case 56: {
+            Steps = input.ReadUInt32();
             break;
           }
         }
@@ -1425,6 +1473,642 @@ namespace Gguf.V1 {
 
   }
 
+  /// <summary>
+  /// One step of a video render.
+  ///
+  /// A clip takes minutes, so the call streams rather than blocking: a spinner with
+  /// no information looks the same whether the runtime is working or hung.
+  /// </summary>
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class VideoProgressEvent : pb::IMessage<VideoProgressEvent>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<VideoProgressEvent> _parser = new pb::MessageParser<VideoProgressEvent>(() => new VideoProgressEvent());
+    private pb::UnknownFieldSet _unknownFields;
+    private int _hasBits0;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<VideoProgressEvent> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[4]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public VideoProgressEvent() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public VideoProgressEvent(VideoProgressEvent other) : this() {
+      _hasBits0 = other._hasBits0;
+      status_ = other.status_;
+      stage_ = other.stage_;
+      detail_ = other.detail_;
+      completed_ = other.completed_;
+      total_ = other.total_;
+      unit_ = other.unit_;
+      elapsedMs_ = other.elapsedMs_;
+      queuePosition_ = other.queuePosition_;
+      clip_ = other.clip_ != null ? other.clip_.Clone() : null;
+      error_ = other.error_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public VideoProgressEvent Clone() {
+      return new VideoProgressEvent(this);
+    }
+
+    /// <summary>Field number for the "status" field.</summary>
+    public const int StatusFieldNumber = 1;
+    private string status_ = "";
+    /// <summary>
+    /// queued | running | completed | failed | cancelled
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Status {
+      get { return status_; }
+      set {
+        status_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "stage" field.</summary>
+    public const int StageFieldNumber = 2;
+    private string stage_ = "";
+    /// <summary>
+    /// Stage within the job, e.g. "denoise", "encoding".
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Stage {
+      get { return stage_; }
+      set {
+        stage_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "detail" field.</summary>
+    public const int DetailFieldNumber = 3;
+    private string detail_ = "";
+    /// <summary>
+    /// Free-form detail from the runtime.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Detail {
+      get { return detail_; }
+      set {
+        detail_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "completed" field.</summary>
+    public const int CompletedFieldNumber = 4;
+    private readonly static uint CompletedDefaultValue = 0;
+
+    private uint completed_;
+    /// <summary>
+    /// Units done in this stage, when the runtime counts them.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint Completed {
+      get { if ((_hasBits0 & 1) != 0) { return completed_; } else { return CompletedDefaultValue; } }
+      set {
+        _hasBits0 |= 1;
+        completed_ = value;
+      }
+    }
+    /// <summary>Gets whether the "completed" field is set</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool HasCompleted {
+      get { return (_hasBits0 & 1) != 0; }
+    }
+    /// <summary>Clears the value of the "completed" field</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void ClearCompleted() {
+      _hasBits0 &= ~1;
+    }
+
+    /// <summary>Field number for the "total" field.</summary>
+    public const int TotalFieldNumber = 5;
+    private readonly static uint TotalDefaultValue = 0;
+
+    private uint total_;
+    /// <summary>
+    /// Units in this stage, when the runtime knows them.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint Total {
+      get { if ((_hasBits0 & 2) != 0) { return total_; } else { return TotalDefaultValue; } }
+      set {
+        _hasBits0 |= 2;
+        total_ = value;
+      }
+    }
+    /// <summary>Gets whether the "total" field is set</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool HasTotal {
+      get { return (_hasBits0 & 2) != 0; }
+    }
+    /// <summary>Clears the value of the "total" field</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void ClearTotal() {
+      _hasBits0 &= ~2;
+    }
+
+    /// <summary>Field number for the "unit" field.</summary>
+    public const int UnitFieldNumber = 6;
+    private readonly static string UnitDefaultValue = "";
+
+    private string unit_;
+    /// <summary>
+    /// What the units are, e.g. "steps".
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Unit {
+      get { return unit_ ?? UnitDefaultValue; }
+      set {
+        unit_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+    /// <summary>Gets whether the "unit" field is set</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool HasUnit {
+      get { return unit_ != null; }
+    }
+    /// <summary>Clears the value of the "unit" field</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void ClearUnit() {
+      unit_ = null;
+    }
+
+    /// <summary>Field number for the "elapsed_ms" field.</summary>
+    public const int ElapsedMsFieldNumber = 7;
+    private ulong elapsedMs_;
+    /// <summary>
+    /// Whole-job elapsed milliseconds.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public ulong ElapsedMs {
+      get { return elapsedMs_; }
+      set {
+        elapsedMs_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "queue_position" field.</summary>
+    public const int QueuePositionFieldNumber = 8;
+    private uint queuePosition_;
+    /// <summary>
+    /// Place in the queue while waiting; 0 when running.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public uint QueuePosition {
+      get { return queuePosition_; }
+      set {
+        queuePosition_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "clip" field.</summary>
+    public const int ClipFieldNumber = 9;
+    private global::Gguf.V1.VideoReply clip_;
+    /// <summary>
+    /// Set only on the final event, which always ends the stream.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Gguf.V1.VideoReply Clip {
+      get { return clip_; }
+      set {
+        clip_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "error" field.</summary>
+    public const int ErrorFieldNumber = 10;
+    private readonly static string ErrorDefaultValue = "";
+
+    private string error_;
+    /// <summary>
+    /// Set only when the job failed.
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Error {
+      get { return error_ ?? ErrorDefaultValue; }
+      set {
+        error_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+    /// <summary>Gets whether the "error" field is set</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool HasError {
+      get { return error_ != null; }
+    }
+    /// <summary>Clears the value of the "error" field</summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void ClearError() {
+      error_ = null;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as VideoProgressEvent);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(VideoProgressEvent other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Status != other.Status) return false;
+      if (Stage != other.Stage) return false;
+      if (Detail != other.Detail) return false;
+      if (Completed != other.Completed) return false;
+      if (Total != other.Total) return false;
+      if (Unit != other.Unit) return false;
+      if (ElapsedMs != other.ElapsedMs) return false;
+      if (QueuePosition != other.QueuePosition) return false;
+      if (!object.Equals(Clip, other.Clip)) return false;
+      if (Error != other.Error) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Status.Length != 0) hash ^= Status.GetHashCode();
+      if (Stage.Length != 0) hash ^= Stage.GetHashCode();
+      if (Detail.Length != 0) hash ^= Detail.GetHashCode();
+      if (HasCompleted) hash ^= Completed.GetHashCode();
+      if (HasTotal) hash ^= Total.GetHashCode();
+      if (HasUnit) hash ^= Unit.GetHashCode();
+      if (ElapsedMs != 0UL) hash ^= ElapsedMs.GetHashCode();
+      if (QueuePosition != 0) hash ^= QueuePosition.GetHashCode();
+      if (clip_ != null) hash ^= Clip.GetHashCode();
+      if (HasError) hash ^= Error.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Status.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Status);
+      }
+      if (Stage.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Stage);
+      }
+      if (Detail.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(Detail);
+      }
+      if (HasCompleted) {
+        output.WriteRawTag(32);
+        output.WriteUInt32(Completed);
+      }
+      if (HasTotal) {
+        output.WriteRawTag(40);
+        output.WriteUInt32(Total);
+      }
+      if (HasUnit) {
+        output.WriteRawTag(50);
+        output.WriteString(Unit);
+      }
+      if (ElapsedMs != 0UL) {
+        output.WriteRawTag(56);
+        output.WriteUInt64(ElapsedMs);
+      }
+      if (QueuePosition != 0) {
+        output.WriteRawTag(64);
+        output.WriteUInt32(QueuePosition);
+      }
+      if (clip_ != null) {
+        output.WriteRawTag(74);
+        output.WriteMessage(Clip);
+      }
+      if (HasError) {
+        output.WriteRawTag(82);
+        output.WriteString(Error);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Status.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Status);
+      }
+      if (Stage.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Stage);
+      }
+      if (Detail.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(Detail);
+      }
+      if (HasCompleted) {
+        output.WriteRawTag(32);
+        output.WriteUInt32(Completed);
+      }
+      if (HasTotal) {
+        output.WriteRawTag(40);
+        output.WriteUInt32(Total);
+      }
+      if (HasUnit) {
+        output.WriteRawTag(50);
+        output.WriteString(Unit);
+      }
+      if (ElapsedMs != 0UL) {
+        output.WriteRawTag(56);
+        output.WriteUInt64(ElapsedMs);
+      }
+      if (QueuePosition != 0) {
+        output.WriteRawTag(64);
+        output.WriteUInt32(QueuePosition);
+      }
+      if (clip_ != null) {
+        output.WriteRawTag(74);
+        output.WriteMessage(Clip);
+      }
+      if (HasError) {
+        output.WriteRawTag(82);
+        output.WriteString(Error);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Status.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Status);
+      }
+      if (Stage.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Stage);
+      }
+      if (Detail.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Detail);
+      }
+      if (HasCompleted) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(Completed);
+      }
+      if (HasTotal) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(Total);
+      }
+      if (HasUnit) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Unit);
+      }
+      if (ElapsedMs != 0UL) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt64Size(ElapsedMs);
+      }
+      if (QueuePosition != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeUInt32Size(QueuePosition);
+      }
+      if (clip_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Clip);
+      }
+      if (HasError) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Error);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(VideoProgressEvent other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Status.Length != 0) {
+        Status = other.Status;
+      }
+      if (other.Stage.Length != 0) {
+        Stage = other.Stage;
+      }
+      if (other.Detail.Length != 0) {
+        Detail = other.Detail;
+      }
+      if (other.HasCompleted) {
+        Completed = other.Completed;
+      }
+      if (other.HasTotal) {
+        Total = other.Total;
+      }
+      if (other.HasUnit) {
+        Unit = other.Unit;
+      }
+      if (other.ElapsedMs != 0UL) {
+        ElapsedMs = other.ElapsedMs;
+      }
+      if (other.QueuePosition != 0) {
+        QueuePosition = other.QueuePosition;
+      }
+      if (other.clip_ != null) {
+        if (clip_ == null) {
+          Clip = new global::Gguf.V1.VideoReply();
+        }
+        Clip.MergeFrom(other.Clip);
+      }
+      if (other.HasError) {
+        Error = other.Error;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Status = input.ReadString();
+            break;
+          }
+          case 18: {
+            Stage = input.ReadString();
+            break;
+          }
+          case 26: {
+            Detail = input.ReadString();
+            break;
+          }
+          case 32: {
+            Completed = input.ReadUInt32();
+            break;
+          }
+          case 40: {
+            Total = input.ReadUInt32();
+            break;
+          }
+          case 50: {
+            Unit = input.ReadString();
+            break;
+          }
+          case 56: {
+            ElapsedMs = input.ReadUInt64();
+            break;
+          }
+          case 64: {
+            QueuePosition = input.ReadUInt32();
+            break;
+          }
+          case 74: {
+            if (clip_ == null) {
+              Clip = new global::Gguf.V1.VideoReply();
+            }
+            input.ReadMessage(Clip);
+            break;
+          }
+          case 82: {
+            Error = input.ReadString();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Status = input.ReadString();
+            break;
+          }
+          case 18: {
+            Stage = input.ReadString();
+            break;
+          }
+          case 26: {
+            Detail = input.ReadString();
+            break;
+          }
+          case 32: {
+            Completed = input.ReadUInt32();
+            break;
+          }
+          case 40: {
+            Total = input.ReadUInt32();
+            break;
+          }
+          case 50: {
+            Unit = input.ReadString();
+            break;
+          }
+          case 56: {
+            ElapsedMs = input.ReadUInt64();
+            break;
+          }
+          case 64: {
+            QueuePosition = input.ReadUInt32();
+            break;
+          }
+          case 74: {
+            if (clip_ == null) {
+              Clip = new global::Gguf.V1.VideoReply();
+            }
+            input.ReadMessage(Clip);
+            break;
+          }
+          case 82: {
+            Error = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class SpeechRequest : pb::IMessage<SpeechRequest>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
@@ -1440,7 +2124,7 @@ namespace Gguf.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[4]; }
+      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1638,7 +2322,7 @@ namespace Gguf.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[5]; }
+      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1839,7 +2523,7 @@ namespace Gguf.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[6]; }
+      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[7]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2131,7 +2815,7 @@ namespace Gguf.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[7]; }
+      get { return global::Gguf.V1.MediaReflection.Descriptor.MessageTypes[8]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

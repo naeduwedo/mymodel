@@ -33,4 +33,7 @@ pub use probe::{
     RUNTIME_ENV, RuntimeProbe, http_base, locate, probe, probe_all, runtime_for, search_dirs,
 };
 pub use speech::{Speech, Transcription, clean_transcript, synthesise, transcribe};
-pub use video::{GeneratedVideo, VideoRequest, generate as generate_video};
+pub use video::{
+    GeneratedVideo, VideoProgress, VideoRequest, generate as generate_video,
+    generate_with_progress as generate_video_with_progress,
+};

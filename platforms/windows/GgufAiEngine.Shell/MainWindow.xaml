@@ -189,6 +189,22 @@
                         </Grid>
                         <TextBlock x:Name="ImageStatus" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
 
+                        <!-- Video is a minutes-long job, so it shows its stage and step
+                             count instead of a spinner that cannot tell working from hung. -->
+                        <TextBlock Text="Video" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBox x:Name="VideoPromptBox" PlaceholderText="Describe the clip..." />
+                        <Grid ColumnDefinitions="Auto,100,Auto,100,Auto,100,Auto,*" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0" Text="Frames" VerticalAlignment="Center" />
+                            <NumberBox x:Name="VideoFramesBox" Grid.Column="1" Value="17" Minimum="1" Maximum="257" SpinButtonPlacementMode="Compact" />
+                            <TextBlock Grid.Column="2" Text="Steps" VerticalAlignment="Center" />
+                            <NumberBox x:Name="VideoStepsBox" Grid.Column="3" Value="8" Minimum="1" Maximum="60" SpinButtonPlacementMode="Compact" />
+                            <TextBlock Grid.Column="4" Text="FPS" VerticalAlignment="Center" />
+                            <NumberBox x:Name="VideoFpsBox" Grid.Column="5" Value="8" Minimum="1" Maximum="30" SpinButtonPlacementMode="Compact" />
+                            <Button x:Name="GenerateVideoButton" Grid.Column="6" Content="Generate clip" Click="OnGenerateVideoClicked" />
+                        </Grid>
+                        <ProgressBar x:Name="VideoProgressBar" Minimum="0" Maximum="100" Value="0" />
+                        <TextBlock x:Name="VideoStatus" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+
                         <TextBlock Text="Speech" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBox x:Name="SpeechTextBox" PlaceholderText="Text to speak..." />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">

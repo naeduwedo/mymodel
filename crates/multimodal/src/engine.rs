@@ -12,7 +12,7 @@ use crate::image::{GeneratedImage, ImageRequest, generate};
 use crate::modality::{ModalityState, modality_report};
 use crate::probe::probe_all;
 use crate::speech::{Speech, Transcription, synthesise, transcribe};
-use crate::video::{GeneratedVideo, VideoRequest, generate as generate_clip};
+use crate::video::{GeneratedVideo, VideoProgress, VideoRequest};
 
 /// Configured paths and a located runtime, ready to serve requests.
 #[derive(Debug, Clone, Default)]
@@ -94,6 +94,18 @@ impl MediaEngine {
 
     /// Generate a clip.
     pub async fn video(&self, request: &VideoRequest) -> Result<GeneratedVideo, MultimodalError> {
+        self.video_with_progress(request, |_| {}).await
+    }
+
+    /// Generate a clip, reporting progress as the runtime advances.
+    pub async fn video_with_progress<F>(
+        &self,
+        request: &VideoRequest,
+        on_progress: F,
+    ) -> Result<GeneratedVideo, MultimodalError>
+    where
+        F: FnMut(VideoProgress),
+    {
         let base = self
             .diffusion_base
             .as_ref()
@@ -101,7 +113,7 @@ impl MediaEngine {
         if self.image_model.is_none() {
             return Err(Self::unavailable("video"));
         }
-        generate_clip(base, request).await
+        crate::video::generate_with_progress(base, request, on_progress).await
     }
 
     /// Synthesise speech.

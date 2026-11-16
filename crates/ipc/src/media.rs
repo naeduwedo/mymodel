@@ -6,8 +6,11 @@
 //! the OpenAI-compatible gateway so the two cannot disagree about what is
 //! available or why something failed.
 
+use std::pin::Pin;
+
 use gguf_engine_multimodal::MediaEngine;
 use gguf_engine_protocol::pb;
+use tokio_stream::Stream;
 use tonic::{Request, Response, Status};
 use tracing::{debug, warn};
 
@@ -47,6 +50,34 @@ impl MediaService {
             }
             gguf_engine_multimodal::MultimodalError::Runtime(message) => Status::internal(message),
         }
+    }
+}
+
+/// How a video job event reaches the caller.
+///
+/// The render runs in its own task and reports through this channel: the
+/// adapter's progress callback is synchronous but the stream is not, so a channel
+/// is the seam between them.
+enum JobEvent {
+    Progress(gguf_engine_multimodal::VideoProgress),
+    Finished(
+        Result<gguf_engine_multimodal::GeneratedVideo, gguf_engine_multimodal::MultimodalError>,
+    ),
+}
+
+/// Map a runtime progress report onto the wire type.
+fn to_wire_progress(progress: &gguf_engine_multimodal::VideoProgress) -> pb::VideoProgressEvent {
+    pb::VideoProgressEvent {
+        status: progress.status.clone(),
+        stage: progress.stage.clone(),
+        detail: progress.detail.clone(),
+        completed: progress.completed,
+        total: progress.total,
+        unit: progress.unit.clone(),
+        elapsed_ms: progress.elapsed_ms,
+        queue_position: progress.queue_position,
+        clip: None,
+        error: None,
     }
 }
 
@@ -91,10 +122,13 @@ impl pb::media_service_server::MediaService for MediaService {
         }))
     }
 
+    type GenerateVideoStream =
+        Pin<Box<dyn Stream<Item = Result<pb::VideoProgressEvent, Status>> + Send>>;
+
     async fn generate_video(
         &self,
         request: Request<pb::VideoRequest>,
-    ) -> Result<Response<pb::VideoReply>, Status> {
+    ) -> Result<Response<Self::GenerateVideoStream>, Status> {
         let request = request.into_inner();
 
         let mut video = gguf_engine_multimodal::VideoRequest::new(&request.prompt);
@@ -110,20 +144,78 @@ impl pb::media_service_server::MediaService for MediaService {
         if request.fps > 0 {
             video.fps = request.fps;
         }
+        if request.steps > 0 {
+            video.steps = request.steps;
+        }
         video.seed = request.seed;
+        let engine = self.engine.clone();
 
-        // Minutes, not seconds. The caller's deadline must be generous; the
-        // adapter polls the runtime rather than holding one long request open.
-        let generated = self.engine.video(&video).await.map_err(|error| {
-            warn!(error = %error, "video generation failed");
-            Self::status(error)
-        })?;
+        // An unbounded channel is safe here because the producer emits at most one
+        // event per poll interval (seconds), so a slow consumer cannot grow the
+        // queue without bound in any realistic render.
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<JobEvent>();
 
-        Ok(Response::new(pb::VideoReply {
-            video: generated.bytes,
-            mime_type: generated.mime_type,
-            frames: generated.frames,
-        }))
+        tokio::spawn(async move {
+            let result = engine
+                .video_with_progress(&video, |progress| {
+                    // A closed receiver means the caller went away; the send
+                    // simply fails and the render is left to finish or fail on
+                    // its own.
+                    let _ = tx.send(JobEvent::Progress(progress));
+                })
+                .await;
+            let _ = tx.send(JobEvent::Finished(result));
+        });
+
+        let stream = async_stream::stream! {
+            while let Some(event) = rx.recv().await {
+                match event {
+                    JobEvent::Progress(progress) => {
+                        yield Ok(to_wire_progress(&progress));
+                    }
+                    JobEvent::Finished(Ok(clip)) => {
+                        yield Ok(pb::VideoProgressEvent {
+                            status: "completed".to_owned(),
+                            stage: String::new(),
+                            detail: String::new(),
+                            completed: None,
+                            total: None,
+                            unit: None,
+                            elapsed_ms: 0,
+                            queue_position: 0,
+                            clip: Some(pb::VideoReply {
+                                video: clip.bytes,
+                                mime_type: clip.mime_type,
+                                frames: clip.frames,
+                            }),
+                            error: None,
+                        });
+                        return;
+                    }
+                    JobEvent::Finished(Err(error)) => {
+                        warn!(error = %error, "video generation failed");
+                        // The failure is reported in the stream rather than as a
+                        // status: the call already succeeded, and the client is
+                        // watching events.
+                        yield Ok(pb::VideoProgressEvent {
+                            status: "failed".to_owned(),
+                            stage: String::new(),
+                            detail: String::new(),
+                            completed: None,
+                            total: None,
+                            unit: None,
+                            elapsed_ms: 0,
+                            queue_position: 0,
+                            clip: None,
+                            error: Some(error.to_string()),
+                        });
+                        return;
+                    }
+                }
+            }
+        };
+
+        Ok(Response::new(Box::pin(stream) as Self::GenerateVideoStream))
     }
 
     async fn synthesise(

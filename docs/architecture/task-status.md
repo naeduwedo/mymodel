@@ -494,3 +494,34 @@ elements after selecting Create: 32
   [ok] Create   [ok] Image    [ok] Speech   [ok] Generate   [ok] Synthesise
   [ok] Describe the image...   [ok] Text to speak...   [ok] Width   [ok] Height
 ```
+## Follow-up - video progress stream: **done**
+
+`GenerateVideo` is now server-streaming (`VideoProgressEvent`), because a clip takes
+minutes and a blocking call cannot distinguish working from hung.
+
+| Layer | State |
+| --- | --- |
+| `VideoProgress` in the adapter | done - stage, detail, completed/total, unit, elapsed, queue position |
+| `multimodal::video::generate_with_progress` | done - one implementation, `generate` delegates to it |
+| `MediaEngine::video_with_progress` | done |
+| gRPC streaming | done - the render runs in its own task and reports over a channel |
+| CLI | done - one line per stage change, on stderr |
+| Windows shell | done - ProgressBar + status line |
+| Linux shell | **not done** |
+
+```text
+$ gguf video --prompt 'a fox in a snowy forest' --steps 8
+conditioning (2s)
+sampling 0/8 steps 0% (8s)
+sampling 3/8 steps 38% (64s)
+vae_decode (154s)
+encoding (165s)
+```
+
+Verified end to end through the Windows UI: UI Automation set the prompt, clicked
+Generate clip, and observed `sampling 3/8 steps` -> `vae_decode` -> `Wrote 424 KiB
+(17 frames)`.
+
+Two real defects found by doing it: the adapter never sent `sample_steps` (so the
+runtime used its default 20 and tripled the render time), and the CLI rewrote its
+progress line on every poll because the elapsed time always changed.

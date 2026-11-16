@@ -52,7 +52,7 @@ namespace Gguf.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Gguf.V1.VideoRequest> __Marshaller_gguf_v1_VideoRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.VideoRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Marshaller<global::Gguf.V1.VideoReply> __Marshaller_gguf_v1_VideoReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.VideoReply.Parser));
+    static readonly grpc::Marshaller<global::Gguf.V1.VideoProgressEvent> __Marshaller_gguf_v1_VideoProgressEvent = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.VideoProgressEvent.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Gguf.V1.SpeechRequest> __Marshaller_gguf_v1_SpeechRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Gguf.V1.SpeechRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
@@ -71,12 +71,12 @@ namespace Gguf.V1 {
         __Marshaller_gguf_v1_ImageReply);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Method<global::Gguf.V1.VideoRequest, global::Gguf.V1.VideoReply> __Method_GenerateVideo = new grpc::Method<global::Gguf.V1.VideoRequest, global::Gguf.V1.VideoReply>(
-        grpc::MethodType.Unary,
+    static readonly grpc::Method<global::Gguf.V1.VideoRequest, global::Gguf.V1.VideoProgressEvent> __Method_GenerateVideo = new grpc::Method<global::Gguf.V1.VideoRequest, global::Gguf.V1.VideoProgressEvent>(
+        grpc::MethodType.ServerStreaming,
         __ServiceName,
         "GenerateVideo",
         __Marshaller_gguf_v1_VideoRequest,
-        __Marshaller_gguf_v1_VideoReply);
+        __Marshaller_gguf_v1_VideoProgressEvent);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::Gguf.V1.SpeechRequest, global::Gguf.V1.SpeechReply> __Method_Synthesise = new grpc::Method<global::Gguf.V1.SpeechRequest, global::Gguf.V1.SpeechReply>(
@@ -176,52 +176,30 @@ namespace Gguf.V1 {
         return CallInvoker.AsyncUnaryCall(__Method_GenerateImage, null, options, request);
       }
       /// <summary>
-      /// Video generation. Minutes, not seconds; the call blocks for the clip.
+      /// Video generation. Minutes, not seconds, so it streams progress and ends with
+      /// the clip (or an error).
       /// </summary>
       /// <param name="request">The request to send to the server.</param>
       /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
       /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
       /// <param name="cancellationToken">An optional token for canceling the call.</param>
-      /// <returns>The response received from the server.</returns>
+      /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Gguf.V1.VideoReply GenerateVideo(global::Gguf.V1.VideoRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncServerStreamingCall<global::Gguf.V1.VideoProgressEvent> GenerateVideo(global::Gguf.V1.VideoRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
         return GenerateVideo(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
-      /// Video generation. Minutes, not seconds; the call blocks for the clip.
-      /// </summary>
-      /// <param name="request">The request to send to the server.</param>
-      /// <param name="options">The options for the call.</param>
-      /// <returns>The response received from the server.</returns>
-      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Gguf.V1.VideoReply GenerateVideo(global::Gguf.V1.VideoRequest request, grpc::CallOptions options)
-      {
-        return CallInvoker.BlockingUnaryCall(__Method_GenerateVideo, null, options, request);
-      }
-      /// <summary>
-      /// Video generation. Minutes, not seconds; the call blocks for the clip.
-      /// </summary>
-      /// <param name="request">The request to send to the server.</param>
-      /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
-      /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
-      /// <param name="cancellationToken">An optional token for canceling the call.</param>
-      /// <returns>The call object.</returns>
-      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Gguf.V1.VideoReply> GenerateVideoAsync(global::Gguf.V1.VideoRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
-      {
-        return GenerateVideoAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
-      }
-      /// <summary>
-      /// Video generation. Minutes, not seconds; the call blocks for the clip.
+      /// Video generation. Minutes, not seconds, so it streams progress and ends with
+      /// the clip (or an error).
       /// </summary>
       /// <param name="request">The request to send to the server.</param>
       /// <param name="options">The options for the call.</param>
       /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Gguf.V1.VideoReply> GenerateVideoAsync(global::Gguf.V1.VideoRequest request, grpc::CallOptions options)
+      public virtual grpc::AsyncServerStreamingCall<global::Gguf.V1.VideoProgressEvent> GenerateVideo(global::Gguf.V1.VideoRequest request, grpc::CallOptions options)
       {
-        return CallInvoker.AsyncUnaryCall(__Method_GenerateVideo, null, options, request);
+        return CallInvoker.AsyncServerStreamingCall(__Method_GenerateVideo, null, options, request);
       }
       /// <summary>
       /// Speech synthesis.

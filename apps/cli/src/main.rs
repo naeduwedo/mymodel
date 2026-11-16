@@ -179,6 +179,9 @@ enum Command {
         /// Frames per second.
         #[arg(long, default_value_t = 8)]
         fps: u32,
+        /// Sampling steps. The runtime default is 20 and triples the wait.
+        #[arg(long, default_value_t = 8)]
+        steps: u32,
         /// Seed.
         #[arg(long)]
         seed: Option<i64>,
@@ -459,6 +462,7 @@ async fn run(cli: Cli) -> Result<ExitCode> {
             height,
             frames,
             fps,
+            steps,
             seed,
         } => {
             let options = commands::VideoOptions {
@@ -467,6 +471,7 @@ async fn run(cli: Cli) -> Result<ExitCode> {
                 height,
                 frames,
                 fps,
+                steps,
                 seed,
             };
             let ok = commands::video(&ctx, &prompt, options, cli.json).await?;

@@ -147,6 +147,45 @@ command asked for `clip.mp4`. Writing webm bytes to a `.mp4` name produces a fil
 players refuse, so the extension now follows the MIME type the runtime reported,
 and the change is announced rather than silent.
 
+## Video progress
+
+A clip takes minutes, so `GenerateVideo` **streams** instead of blocking. The
+runtime already reports a stage and a step counter, and that is what is relayed -
+not a percentage derived from elapsed time, which would be a guess that gets more
+wrong the slower the machine is.
+
+```text
+$ gguf video --prompt 'a fox in a snowy forest' --frames 17 --steps 8
+conditioning (2s)
+sampling 0/8 steps 0% (8s)
+sampling 1/8 steps 12% (30s)
+...
+sampling 7/8 steps 88% (134s)
+vae_decode (154s)
+encoding (165s)
+```
+
+The same events reach the Windows shell, which drives a `ProgressBar` and a status
+line. Verified by UI Automation: the harness selected the Create page, typed the
+prompt, clicked **Generate clip**, and watched the text change live:
+
+```text
+[168s] sampling 3/8 steps (170s)
+...
+[351s] vae_decode (355s)
+DONE: Wrote 424 KiB (17 frames) to C:\...\gguf-clip-165929.webm
+```
+
+**Two defects this surfaced, both real:**
+
+| Defect | Consequence | Fix |
+| --- | --- | --- |
+| the adapter never sent `sample_steps` | the runtime used its default 20 steps, tripling the render | `VideoRequest::steps`, sent as `sample_params.sample_steps` |
+| the CLI rewrote its progress line every poll | hundreds of lines in a redirected log | rewrite only when the stage or step count changes |
+
+A third, caught by the shell: the status text showed the stage but not the step
+count, so the UI was less informative than the CLI. It now shows both.
+
 ## Endpoints
 
 | Endpoint | Behaviour |

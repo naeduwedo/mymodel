@@ -30,6 +30,8 @@ message VideoRequest {
   uint32 frames = 4;
   uint32 fps = 5;
   optional int64 seed = 6;
+  // Sampling steps. 0 lets the runtime choose its default, which is slow.
+  uint32 steps = 7;
 }
 
 message VideoReply {
@@ -37,6 +39,33 @@ message VideoReply {
   bytes video = 1;
   string mime_type = 2;
   uint32 frames = 3;
+}
+
+// One step of a video render.
+//
+// A clip takes minutes, so the call streams rather than blocking: a spinner with
+// no information looks the same whether the runtime is working or hung.
+message VideoProgressEvent {
+  // queued | running | completed | failed | cancelled
+  string status = 1;
+  // Stage within the job, e.g. "denoise", "encoding".
+  string stage = 2;
+  // Free-form detail from the runtime.
+  string detail = 3;
+  // Units done in this stage, when the runtime counts them.
+  optional uint32 completed = 4;
+  // Units in this stage, when the runtime knows them.
+  optional uint32 total = 5;
+  // What the units are, e.g. "steps".
+  optional string unit = 6;
+  // Whole-job elapsed milliseconds.
+  uint64 elapsed_ms = 7;
+  // Place in the queue while waiting; 0 when running.
+  uint32 queue_position = 8;
+  // Set only on the final event, which always ends the stream.
+  optional VideoReply clip = 9;
+  // Set only when the job failed.
+  optional string error = 10;
 }
 
 message SpeechRequest {
@@ -63,8 +92,9 @@ message TranscriptionReply {
 service MediaService {
   // Image generation. FAILED_PRECONDITION when no diffusion runtime is available.
   rpc GenerateImage(ImageRequest) returns (ImageReply);
-  // Video generation. Minutes, not seconds; the call blocks for the clip.
-  rpc GenerateVideo(VideoRequest) returns (VideoReply);
+  // Video generation. Minutes, not seconds, so it streams progress and ends with
+  // the clip (or an error).
+  rpc GenerateVideo(VideoRequest) returns (stream VideoProgressEvent);
   // Speech synthesis.
   rpc Synthesise(SpeechRequest) returns (SpeechReply);
   // Speech recognition.

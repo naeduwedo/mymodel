@@ -181,19 +181,21 @@ public sealed class CoreClient : IDisposable
         return reply.Png.ToByteArray();
     }
 
-    /// <summary>Generate a video clip, returning the encoded container bytes.</summary>
+    /// <summary>Generate a video clip, yielding progress as the runtime advances.</summary>
     /// <remarks>
-    /// This takes minutes, not seconds. Callers should set a deadline that reflects
-    /// that; the default gRPC deadline would abandon a working render.
+    /// The stream ends after exactly one event carrying the clip, or one carrying
+    /// an error. Callers should set a deadline that reflects minutes, not seconds;
+    /// the default gRPC deadline would abandon a working render.
     /// </remarks>
-    public async Task<VideoReply> GenerateVideoAsync(
+    public IAsyncEnumerable<VideoProgressEvent> GenerateVideoAsync(
         VideoRequest request,
         CancellationToken cancellationToken = default)
     {
         var media = new MediaService.MediaServiceClient(_channel);
-        return await media
-            .GenerateVideoAsync(request, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+        return media
+            .GenerateVideo(request, cancellationToken: cancellationToken)
+            .ResponseStream
+            .ReadAllAsync(cancellationToken);
     }
 
     /// <summary>Synthesise speech, returning WAV bytes.</summary>

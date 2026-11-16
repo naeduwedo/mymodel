@@ -133,6 +133,7 @@ pub async fn video(ctx: &Context, prompt: &str, options: VideoOptions, json: boo
     request.height = options.height;
     request.frames = options.frames;
     request.fps = options.fps;
+    request.steps = options.steps;
     request.seed = options.seed;
 
     if !json {
@@ -144,9 +145,33 @@ pub async fn video(ctx: &Context, prompt: &str, options: VideoOptions, json: boo
         eprintln!("note     : a clip takes minutes; polling the runtime");
     }
 
-    let generated = gguf_engine_multimodal::generate_video(&base, &request)
+    // Progress goes to stderr so `--json` keeps producing one clean document on
+    // stdout, and so a piped caller is not given a stream of percentages.
+    let mut last_line = String::new();
+    let mut last_key = String::new();
+    let generated =
+        gguf_engine_multimodal::generate_video_with_progress(&base, &request, |progress| {
+            // Only rewrite when the stage or the step count changes. The elapsed time
+            // changes on every poll, so including it in the comparison would emit a
+            // line per second - harmless in a terminal, noise in a redirected log.
+            let key = format!(
+                "{}/{:?}/{}",
+                progress.stage, progress.completed, progress.status
+            );
+            if key != last_key
+                && let Some(line) = describe_progress(&progress)
+            {
+                eprint!("\r{line}");
+                last_line = line;
+                last_key = key;
+            }
+        })
         .await
         .map_err(describe)?;
+
+    if !json && !last_line.is_empty() {
+        eprintln!();
+    }
 
     // The runtime chooses the container (webm for sd.cpp). Writing those bytes to
     // a ".mp4" name would produce a file players refuse, so the extension follows
@@ -205,6 +230,8 @@ pub struct VideoOptions {
     pub frames: u32,
     /// Frames per second.
     pub fps: u32,
+    /// Sampling steps.
+    pub steps: u32,
     /// Seed.
     pub seed: Option<i64>,
 }
@@ -303,6 +330,38 @@ pub fn speak(ctx: &Context, text: &str, out: &Path, json: bool) -> Result<bool> 
     }
 
     Ok(true)
+}
+
+/// One line describing a render's progress, or `None` when there is nothing new.
+///
+/// A percentage is only shown when the runtime reports both a completed and a
+/// total count: deriving one from elapsed time would be a guess that gets more
+/// wrong the slower the machine is.
+pub fn describe_progress(progress: &gguf_engine_multimodal::VideoProgress) -> Option<String> {
+    let head = if progress.queue_position > 0 {
+        format!("queued (position {})", progress.queue_position)
+    } else if progress.stage.is_empty() {
+        progress.status.clone()
+    } else {
+        progress.stage.clone()
+    };
+
+    let counts = match (progress.completed, progress.total) {
+        (Some(done), Some(total)) if total > 0 => {
+            let unit = progress.unit.as_deref().unwrap_or("items");
+            format!(" {done}/{total} {unit}")
+        }
+        (Some(done), _) => format!(" {done}"),
+        _ => String::new(),
+    };
+
+    let percent = progress
+        .fraction()
+        .map(|fraction| format!(" {:.0}%", fraction * 100.0))
+        .unwrap_or_default();
+
+    let seconds = progress.elapsed_ms / 1000;
+    Some(format!("{head}{counts}{percent} ({seconds}s)"))
 }
 
 /// The file extension for a container MIME type.
