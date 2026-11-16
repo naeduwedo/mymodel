@@ -37,18 +37,22 @@ fn bin(name: &str) -> std::path::PathBuf {
     } else {
         name.to_owned()
     };
-    let mut dir = std::env::current_exe().expect("test executable path");
-    dir.pop();
-    let mut candidates = vec![dir.join(&exe)];
-    if let Some(parent) = dir.parent() {
-        candidates.push(parent.join(&exe));
-    }
-    for candidate in candidates {
+
+    // Cargo has placed test harnesses in `deps/` and, more recently, in a
+    // `build/.../out/` directory, so walk up rather than assume a layout.
+    let start = std::env::current_exe().expect("test executable path");
+    let mut looked = Vec::new();
+    for ancestor in start.ancestors().skip(1).take(6) {
+        let candidate = ancestor.join(&exe);
         if candidate.is_file() {
             return candidate;
         }
+        looked.push(candidate);
     }
-    panic!("could not find {exe}; run the suite with cargo test --workspace");
+
+    panic!(
+        "could not find {exe}; looked in {looked:?}. Run the suite with 'cargo test --workspace'."
+    );
 }
 
 fn runtime() -> tokio::runtime::Runtime {

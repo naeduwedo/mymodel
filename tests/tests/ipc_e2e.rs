@@ -35,18 +35,20 @@ fn bin(name: &str) -> PathBuf {
     } else {
         name.to_owned()
     };
-    let mut dir = std::env::current_exe().expect("test executable path");
-    dir.pop();
-    let candidates = [
-        dir.join(&exe),
-        dir.parent().unwrap_or(Path::new(".")).join(&exe),
-    ];
-    for candidate in candidates {
+
+    // Walk up: harnesses live in `deps/` or in a `build/.../out/` directory
+    // depending on the Cargo version, so neither layout may be assumed.
+    let start = std::env::current_exe().expect("test executable path");
+    let mut looked = Vec::new();
+    for ancestor in start.ancestors().skip(1).take(6) {
+        let candidate = ancestor.join(&exe);
         if candidate.is_file() {
             return candidate;
         }
+        looked.push(candidate);
     }
-    panic!("could not find the {exe} binary; run the suite with 'cargo test --workspace'");
+
+    panic!("could not find {exe}; looked in {looked:?}");
 }
 
 fn start_daemon(data_root: &Path) -> Daemon {

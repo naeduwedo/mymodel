@@ -397,7 +397,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let paths = AppPaths::from_config(tmp.path(), &Config::default()).unwrap();
         paths.ensure_dirs().unwrap();
-        check_mode(&paths);
+        assert_eq!(check_mode(&paths), ExitCode::SUCCESS);
         let db = Database::open(paths.database_file()).unwrap();
         assert_eq!(
             db.schema_version().unwrap(),

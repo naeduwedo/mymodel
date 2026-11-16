@@ -66,10 +66,8 @@ pub fn modality_report() -> Vec<ModalityReport> {
 
     // Named explicitly so the report answers the question even when no manifest
     // claims the modality, rather than silently omitting it.
-    for extra in ["music"] {
-        if !names.iter().any(|name| name == extra) {
-            names.push(extra.to_owned());
-        }
+    if !names.iter().any(|name| name == "music") {
+        names.push("music".to_owned());
     }
     names.sort();
 

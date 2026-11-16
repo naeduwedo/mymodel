@@ -69,7 +69,8 @@ pub fn plan(
         .iter()
         .map(|device| (device, budget_of(&device.id)))
         .collect();
-    single.sort_by(|a, b| b.1.cmp(&a.1));
+    // Largest budget first.
+    single.sort_by_key(|entry| std::cmp::Reverse(entry.1));
 
     if let Some((device, usable)) = single.first()
         && *usable >= need

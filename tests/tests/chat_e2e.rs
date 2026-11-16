@@ -128,16 +128,21 @@ fn core_binary() -> PathBuf {
     if let Ok(path) = std::env::var("GGUF_CORE_BIN") {
         return PathBuf::from(path);
     }
-    let mut path = std::env::current_exe().unwrap();
-    // target/<profile>/deps/<test>.exe -> target/<profile>/gguf-core.exe
-    path.pop();
-    path.pop();
-    path.push(if cfg!(windows) {
+    let exe = if cfg!(windows) {
         "gguf-core.exe"
     } else {
         "gguf-core"
-    });
-    path
+    };
+    // Walk up rather than assume one target layout: harnesses live in `deps/` or
+    // in a `build/.../out/` directory depending on the Cargo version.
+    let start = std::env::current_exe().unwrap();
+    for ancestor in start.ancestors().skip(1).take(6) {
+        let candidate = ancestor.join(exe);
+        if candidate.is_file() {
+            return candidate;
+        }
+    }
+    start.parent().unwrap().join(exe)
 }
 
 #[test]

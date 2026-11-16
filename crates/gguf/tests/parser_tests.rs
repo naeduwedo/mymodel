@@ -2,9 +2,15 @@
 //!
 //! Two kinds of test here, and the distinction matters:
 //!
-//! * **Real file.** If a GGUF sample exists on this machine, parse it and assert
-//!   what is actually in it. The test fails loudly when the sample is missing,
-//!   because a test that silently passes without running is worse than none.
+//! * **Real file.** Parses a GGUF that exists on this machine. These are
+//!   `#[ignore]`d: a machine without a model - a CI runner, for instance - cannot
+//!   run them, and a hard failure there says "CI is broken" rather than "this test
+//!   needs a model". `#[ignore]` is still a report: the test shows up as ignored,
+//!   never as passed, so it cannot go green without running.
+//!
+//!   ```text
+//!   GGUF_TEST_MODEL=/path/to/model.gguf cargo test -p gguf-engine-gguf -- --ignored
+//!   ```
 //! * **Synthetic malformed files.** Built byte by byte here so every guard has a
 //!   case: bad magic, unsupported version, truncation, absurd lengths, duplicate
 //!   keys, out-of-range tensors, bad alignment.
@@ -13,15 +19,22 @@ use gguf_engine_gguf::{
     GgufError, KnownTensorType, Limits, TensorType, parse_bytes, parse_file, parse_with_limits,
 };
 
-/// Sample locations, most specific first.
+/// Where to look for a real GGUF, most specific first.
+///
+/// `GGUF_TEST_MODEL` comes first so any machine - and CI - can supply its own
+/// without editing this file. The trailing entry is the sample on the development
+/// machine, kept so `--ignored` runs work there without an environment variable.
 const SAMPLES: &[&str] =
     &["F:/dsh-project/rustMoe/fixtures/tiny-ds41/tiny-ds41-00001-of-00001.gguf"];
 
-fn sample_path() -> Option<&'static str> {
-    SAMPLES
-        .iter()
-        .copied()
-        .find(|path| std::path::Path::new(path).is_file())
+fn sample_path() -> Option<std::path::PathBuf> {
+    let from_env = std::env::var("GGUF_TEST_MODEL")
+        .ok()
+        .map(std::path::PathBuf::from);
+    from_env
+        .into_iter()
+        .chain(SAMPLES.iter().map(std::path::PathBuf::from))
+        .find(|path| path.is_file())
 }
 // ---------------------------------------------------------------- builders --
 
@@ -80,15 +93,11 @@ fn one_tensor_gguf(
 // -------------------------------------------------------------- real file ---
 
 #[test]
+#[ignore = "needs a real GGUF: set GGUF_TEST_MODEL and run with --ignored"]
 fn parses_a_real_gguf_from_this_machine() {
-    let path = sample_path().unwrap_or_else(|| {
-        panic!(
-            "no GGUF sample found at {:?}; this test must not pass without running",
-            SAMPLES
-        )
-    });
+    let path = sample_path().expect("GGUF_TEST_MODEL points at a readable model");
 
-    let gguf = parse_file(path).expect("sample parses");
+    let gguf = parse_file(&path).expect("sample parses");
 
     assert!(gguf.version >= 2, "version {}", gguf.version);
     assert!(
@@ -125,7 +134,7 @@ fn parses_a_real_gguf_from_this_machine() {
 
     println!(
         "parsed {}: v{}, {} tensors, {} metadata entries, alignment {}, quant {}",
-        path,
+        path.display(),
         gguf.version,
         gguf.tensors.len(),
         gguf.metadata.len(),
@@ -135,10 +144,11 @@ fn parses_a_real_gguf_from_this_machine() {
 }
 
 #[test]
+#[ignore = "needs a real GGUF: set GGUF_TEST_MODEL and run with --ignored"]
 fn parsing_the_same_file_twice_gives_identical_results() {
-    let path = sample_path().expect("GGUF sample");
-    let first = parse_file(path).unwrap();
-    let second = parse_file(path).unwrap();
+    let path = sample_path().expect("GGUF_TEST_MODEL points at a readable model");
+    let first = parse_file(&path).unwrap();
+    let second = parse_file(&path).unwrap();
     assert_eq!(first, second, "parsing must be deterministic");
 }
 // ---------------------------------------------------------------- failures --

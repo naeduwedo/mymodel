@@ -9,36 +9,32 @@ use std::process::Command;
 
 use serde_json::Value;
 
-/// Directory holding the test executable and the workspace binaries.
+/// The path to a workspace binary.
 ///
-/// Cargo places integration-test executables and `[[bin]]` targets in the same
-/// directory (`target/<profile>/deps` for the test harness, `target/<profile>`
-/// for the binaries). We search the harness directory first and walk up one
-/// level, which is stable across Cargo versions.
-fn exe_dir() -> std::path::PathBuf {
-    let mut dir = std::env::current_exe().expect("current executable path");
-    dir.pop();
-    dir
-}
-
+/// `CARGO_BIN_EXE_<name>` is only defined for `[[bin]]` targets of the package
+/// being tested, and these binaries live in other packages, so it cannot be used.
+/// Instead this walks up from the test executable: Cargo has placed the harness
+/// in `deps/`, and now in a `build/.../out/` directory, so the search must not
+/// assume one layout. Finding the binary is what matters, not where it sits.
 fn bin_path(name: &str) -> std::path::PathBuf {
     let exe = if cfg!(windows) {
         format!("{name}.exe")
     } else {
         name.to_owned()
     };
-    let mut candidates = vec![exe_dir().join(&exe)];
-    if let Some(parent) = exe_dir().parent() {
-        candidates.push(parent.join(&exe));
-    }
-    for candidate in &candidates {
+
+    let start = std::env::current_exe().expect("current executable path");
+    let mut looked = Vec::new();
+    for ancestor in start.ancestors().skip(1).take(6) {
+        let candidate = ancestor.join(&exe);
         if candidate.is_file() {
-            return candidate.clone();
+            return candidate;
         }
+        looked.push(candidate);
     }
+
     panic!(
-        "binary {exe} not found; looked in {:?}. Run the suite with 'cargo test --workspace'.",
-        candidates
+        "binary {exe} not found; looked in {looked:?}. Run the suite with 'cargo test --workspace'."
     );
 }
 
